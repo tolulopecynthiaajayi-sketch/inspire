@@ -26,45 +26,62 @@
             font-family: 'Montserrat', sans-serif;
         }
 
-        /* Navy Blue Dominant */
+        /* Navy Blue Dominant Palette */
         .bg-navy-primary {
             background-color: #1E3A8A;
         }
 
         /* Main Navy */
         .bg-navy-dark {
-            background-color: #172554;
+            background-color: #0F172A;
         }
 
-        /* Darker Navy */
+        /* Deepest Navy */
+        .bg-navy-light {
+            background-color: #EFF6FF;
+        }
+
+        /* Background wash */
+
         .text-navy-primary {
             color: #1E3A8A;
+        }
+
+        .text-navy-dark {
+            color: #0F172A;
         }
 
         .border-navy {
             border-color: #1E3A8A;
         }
 
-        /* Peach Accent */
+        /* Peach/Red Accent (Darker/Terracotta) */
         .bg-peach-accent {
-            background-color: #FF9F89;
+            background-color: #D9654C;
         }
 
         .text-peach-accent {
-            color: #FF9F89;
+            color: #D9654C;
         }
 
         .border-peach {
-            border-color: #FF9F89;
+            border-color: #D9654C;
+        }
+
+        .border-peach-accent {
+            border-color: #D9654C;
+        }
+
+        .hover-bg-navy-dark:hover {
+            background-color: #172554;
         }
 
         .hover-bg-peach:hover {
-            background-color: #E88E7A;
+            background-color: #C0553F;
         }
 
         .hero-bg {
-            /* Navy Gradient Overlay */
-            background: linear-gradient(rgba(30, 58, 138, 0.92), rgba(30, 58, 138, 0.85)), url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background: linear-gradient(rgba(15, 23, 42, 0.9), rgba(30, 58, 138, 0.8)), url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
             background-size: cover;
             background-position: center;
         }
@@ -104,17 +121,17 @@
 
         // 1. Top Bar
         const TopBar = () => (
-            <div className="bg-navy-dark text-white py-2 text-sm border-b border-white/10">
+            <div className="bg-navy-dark text-slate-300 py-2 text-sm border-b border-white/5">
                 <div className="max-w-7xl mx-auto px-4 flex justify-between items-center flex-wrap gap-2">
                     <div className="flex gap-4 items-center">
-                        <a href="mailto:contact@maisonalora.fr" className="flex items-center gap-2 hover:text-peach-accent transition">
+                        <a href="mailto:contact@maisonalora.fr" className="flex items-center gap-2 hover:text-white transition">
                             <Icon name="mail" size={14} /> contact@maisonalora.fr
                         </a>
-                        <a href="tel:+33641267562" className="hidden sm:flex items-center gap-2 hover:text-peach-accent transition">
-                            <Icon name="phone" size={14} /> +33 7 84 76 17 95
+                        <a href="tel:+33641267562" className="hidden sm:flex items-center gap-2 hover:text-white transition">
+                            <Icon name="phone" size={14} /> +33 6 41 26 75 62
                         </a>
                     </div>
-                    <div className="flex gap-4 text-xs font-semibold uppercase tracking-wider text-gray-300">
+                    <div className="flex gap-4 text-xs font-semibold uppercase tracking-wider">
                         <a href="#" className="hover:text-peach-accent transition">Landlord Portal</a>
                         <span>|</span>
                         <a href="#" className="hover:text-peach-accent transition">Corporate Portal</a>
@@ -133,27 +150,25 @@
                     <div className="max-w-7xl mx-auto px-4">
                         <div className="flex justify-between h-20 items-center">
                             {/* Logo Area */}
-                            <div className="flex items-center gap-2">
-                                <div className="h-12 w-auto flex items-center">
-                                    <div className="flex items-center gap-2">
-                                        {/* Logo Icon using Navy and Peach */}
-                                        <div className="w-10 h-10 bg-navy-primary rounded-full flex items-center justify-center text-peach-accent font-bold text-xl border-2 border-peach-accent">A</div>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-2xl text-navy-primary leading-none tracking-tight">ALORA</span>
-                                            <span className="text-[0.6rem] font-bold text-peach-accent uppercase tracking-widest">Global Group</span>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div className="flex items-center gap-3">
+                                {/* Logo Image - Normal w/ white bg match */}
+                                <img src="logo.png" alt="Alora Global Group" className="h-24 w-auto object-contain" />
+                                {/* Text hidden on mobile if logo includes text, or kept if logo is just icon. 
+                                    The uploaded logo has text, so we might hide the text below or keep it if it's small.
+                                    Let's keep the image prominent and potentially hide the text div if the logo is sufficient.
+                                    Based on the logo image provided, it has "ALORA GLOBAL GROUP".
+                                    So we can remove the text div next to it.
+                                 */}
                             </div>
 
                             {/* Desktop Menu */}
-                            <div className="hidden md:flex items-center space-x-6 text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                                <a href="#" className="text-navy-primary hover:text-peach-accent transition">Home</a>
-                                <a href="#plans" className="hover:text-peach-accent transition">Packages</a>
-                                <a href="#edu" className="hover:text-peach-accent transition">Edu Alora</a>
-                                <a href="#maison" className="hover:text-peach-accent transition">Maison Alora</a>
-                                <a href="#inspire" className="hover:text-peach-accent transition">INSPIRE</a>
-                                <a href="#talent" className="hover:text-peach-accent transition">For Companies</a>
+                            <div className="hidden md:flex items-center space-x-8 text-sm font-bold text-slate-600 uppercase tracking-wide">
+                                <a href="#" className="text-navy-primary">Home</a>
+                                <a href="#plans" className="hover:text-navy-primary transition">Packages</a>
+                                <a href="#edu" className="hover:text-navy-primary transition">Edu Alora</a>
+                                <a href="#maison" className="hover:text-navy-primary transition">Maison Alora</a>
+                                <a href="#inspire" className="hover:text-navy-primary transition">INSPIRE</a>
+                                <a href="#talent" className="hover:text-navy-primary transition">For Companies</a>
                             </div>
 
                             {/* Mobile Menu Button */}
@@ -166,7 +181,7 @@
                     {/* Mobile Menu */}
                     {isOpen && (
                         <div className="md:hidden bg-white border-t border-gray-100 py-4 px-4 flex flex-col space-y-4 shadow-xl">
-                            <a href="#" className="font-semibold text-navy-primary">Home</a>
+                            <a href="#" className="font-bold text-navy-primary">Home</a>
                             <a href="#plans" className="font-semibold text-gray-700">Packages</a>
                             <a href="#edu" className="font-semibold text-gray-700">Edu Alora</a>
                             <a href="#maison" className="font-semibold text-gray-700">Maison Alora</a>
@@ -182,21 +197,21 @@
         const Hero = () => (
             <div className="hero-bg text-white py-24 md:py-32">
                 <div className="max-w-7xl mx-auto px-4 text-center">
-                    <div className="inline-block bg-navy-dark/80 border border-peach-accent/50 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-6 backdrop-blur-md text-peach-accent">
+                    <div className="inline-block bg-navy-primary/80 border border-peach-accent/50 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-8 backdrop-blur-md text-peach-accent">
                         Applications Open: France 2025
                     </div>
                     <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-                        The Complete Ecosystem for <br />
-                        <span className="text-peach-accent">GLOBAL EDUCATION</span> & <span className="text-white">INTEGRATION</span>
+                        Education. Housing. <br />
+                        <span className="text-peach-accent">Integration.</span>
                     </h1>
-                    <p className="text-lg md:text-xl text-gray-200 mb-10 max-w-3xl mx-auto font-light">
-                        We don't just get you into a university. We find your home, build your community, and launch your career in France.
+                    <p className="text-lg md:text-xl text-slate-200 mb-10 max-w-3xl mx-auto font-light leading-relaxed">
+                        The complete ecosystem for international students and professionals in France. From university admission to your first apartment and career launch.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button className="bg-peach-accent text-navy-primary px-8 py-4 rounded font-bold uppercase tracking-wide shadow-lg transition transform hover:-translate-y-1 hover:bg-white">
+                        <button className="bg-peach-accent text-navy-dark px-8 py-4 rounded font-bold uppercase tracking-wide shadow-lg transition transform hover:-translate-y-1 hover:bg-white hover:text-navy-primary">
                             I'm a Student
                         </button>
-                        <button className="bg-transparent border-2 border-white text-white px-8 py-4 rounded font-bold uppercase tracking-wide shadow-lg transition transform hover:-translate-y-1 hover:bg-white hover:text-navy-primary hover:border-white">
+                        <button className="bg-transparent border-2 border-white text-white px-8 py-4 rounded font-bold uppercase tracking-wide shadow-lg transition transform hover:-translate-y-1 hover:bg-white hover:text-navy-primary">
                             I'm a Landlord
                         </button>
                     </div>
@@ -210,80 +225,80 @@
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="grid md:grid-cols-4 gap-6">
                         {/* Edu Alora */}
-                        <div className="bg-white p-8 rounded-lg shadow-lg border-t-4 border-navy-primary hover:-translate-y-2 transition duration-300 group">
+                        <div className="bg-white p-8 rounded-lg shadow-xl border-t-4 border-navy-primary hover:-translate-y-2 transition duration-300 group">
                             <div className="text-navy-primary mb-4 group-hover:scale-110 transition"><Icon name="graduationCap" size={32} /></div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Edu Alora</h3>
                             <p className="text-sm text-gray-600">University admissions & visa support for France and Europe.</p>
                         </div>
                         {/* Maison Alora */}
-                        <div className="bg-white p-8 rounded-lg shadow-lg border-t-4 border-peach-accent hover:-translate-y-2 transition duration-300 group">
+                        <div className="bg-white p-8 rounded-lg shadow-xl border-t-4 border-peach-accent hover:-translate-y-2 transition duration-300 group">
                             <div className="text-peach-accent mb-4 group-hover:scale-110 transition"><Icon name="home" size={32} /></div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Maison Alora</h3>
                             <p className="text-sm text-gray-600">Guaranteed accommodation and housing administrative support.</p>
                         </div>
                         {/* INSPIRE */}
-                        <div className="bg-white p-8 rounded-lg shadow-lg border-t-4 border-navy-primary hover:-translate-y-2 transition duration-300 group">
+                        <div className="bg-white p-8 rounded-lg shadow-xl border-t-4 border-navy-primary hover:-translate-y-2 transition duration-300 group">
                             <div className="text-navy-primary mb-4 group-hover:scale-110 transition"><Icon name="sprout" size={32} /></div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">INSPIRE</h3>
                             <p className="text-sm text-gray-600">Social integration through mentorship, fashion & sustainability.</p>
                         </div>
                         {/* Alora Talent */}
-                        <div className="bg-navy-dark p-8 rounded-lg shadow-lg border-t-4 border-peach-accent hover:-translate-y-2 transition duration-300 group">
+                        <div className="bg-navy-dark p-8 rounded-lg shadow-xl border-t-4 border-peach-accent hover:-translate-y-2 transition duration-300 group">
                             <div className="text-peach-accent mb-4 group-hover:scale-110 transition"><Icon name="briefcase" size={32} /></div>
                             <h3 className="text-xl font-bold text-white mb-2">Alora Talent</h3>
-                            <p className="text-sm text-gray-400">Corporate recruitment services connecting companies to global talent.</p>
+                            <p className="text-sm text-slate-300">Corporate recruitment services connecting companies to global talent.</p>
                         </div>
                     </div>
                 </div>
             </div>
         );
 
-        // 5. Service Plans (Moved Up)
+        // 5. Service Plans (Moved UP)
         const Plans = () => (
-            <div id="plans" className="py-24 bg-gray-50">
+            <div id="plans" className="py-24 bg-navy-light">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="text-center mb-16">
-                        <div className="text-peach-primary font-bold uppercase tracking-widest text-sm mb-2">Pricing Models</div>
+                        <div className="text-peach-accent font-bold uppercase tracking-widest text-sm mb-2">Pricing Models</div>
                         <h2 className="text-3xl font-bold text-navy-primary mb-3 uppercase tracking-tight">Alora Service Packages</h2>
-                        <div className="w-20 h-1 bg-peach-accent mx-auto rounded-full"></div>
+                        <div className="w-20 h-1 bg-navy-primary mx-auto rounded-full"></div>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                         {/* Student Basic */}
-                        <div className="border border-gray-200 rounded-lg p-8 hover:shadow-xl transition relative bg-white">
+                        <div className="border border-slate-200 rounded-lg p-8 hover:shadow-xl transition relative bg-white">
                             <div className="text-gray-500 font-bold uppercase text-xs tracking-wider mb-2">Student</div>
                             <h3 className="text-2xl font-bold text-gray-900 mb-4">Edu Alora Basic</h3>
-                            <ul className="text-sm text-gray-600 space-y-3 mb-8">
-                                <li className="flex gap-2"><Icon name="check" size={16} className="text-peach-accent" /> 3 University Applications</li>
-                                <li className="flex gap-2"><Icon name="check" size={16} className="text-peach-accent" /> Document Review</li>
-                                <li className="flex gap-2"><Icon name="check" size={16} className="text-peach-accent" /> Visa Guidance</li>
+                            <ul className="text-sm text-gray-600 space-y-4 mb-8">
+                                <li className="flex gap-3"><Icon name="check" size={18} className="text-navy-primary" /> 3 University Applications</li>
+                                <li className="flex gap-3"><Icon name="check" size={18} className="text-navy-primary" /> Document Review</li>
+                                <li className="flex gap-3"><Icon name="check" size={18} className="text-navy-primary" /> Visa Guidance</li>
                             </ul>
-                            <button className="w-full py-2 border-2 border-navy-primary text-navy-primary font-bold text-sm uppercase rounded hover:bg-navy-light transition">Choose Plan</button>
+                            <button className="w-full py-3 border-2 border-navy-primary text-navy-primary font-bold text-sm uppercase rounded hover:bg-navy-light transition">Choose Plan</button>
                         </div>
 
                         {/* Student Premium */}
                         <div className="border-t-4 border-peach-accent bg-white rounded-lg p-8 shadow-2xl relative transform md:-translate-y-4">
-                            <div className="absolute top-0 right-0 bg-peach-accent text-navy-primary text-xs px-2 py-1 font-bold rounded-bl uppercase">Best Value</div>
+                            <div className="absolute top-0 right-0 bg-peach-accent text-navy-dark text-xs px-3 py-1 font-bold rounded-bl uppercase">Best Value</div>
                             <div className="text-peach-accent font-bold uppercase text-xs tracking-wider mb-2">Student</div>
                             <h3 className="text-2xl font-bold text-navy-primary mb-4">Alora Gold</h3>
-                            <ul className="text-sm text-gray-600 space-y-3 mb-8">
-                                <li className="flex gap-2"><Icon name="check" size={16} className="text-navy-primary" /> <strong>Edu Alora:</strong> All Applications</li>
-                                <li className="flex gap-2"><Icon name="check" size={16} className="text-navy-primary" /> <strong>Maison Alora:</strong> Housing Secured</li>
-                                <li className="flex gap-2"><Icon name="check" size={16} className="text-navy-primary" /> <strong>INSPIRE:</strong> Mentorship Guaranteed</li>
+                            <ul className="text-sm text-gray-600 space-y-4 mb-8">
+                                <li className="flex gap-3"><Icon name="check" size={18} className="text-peach-accent" /> <strong>Edu Alora:</strong> All Applications</li>
+                                <li className="flex gap-3"><Icon name="check" size={18} className="text-peach-accent" /> <strong>Maison Alora:</strong> Housing Secured</li>
+                                <li className="flex gap-3"><Icon name="check" size={18} className="text-peach-accent" /> <strong>INSPIRE:</strong> Mentorship Guaranteed</li>
                             </ul>
                             <button className="w-full py-3 bg-navy-primary text-white font-bold text-sm uppercase rounded hover:bg-navy-dark transition shadow-lg">Apply Now</button>
                         </div>
 
                         {/* Corporate */}
-                        <div className="border border-navy-dark bg-white rounded-lg p-8 hover:shadow-xl transition relative">
+                        <div className="border border-slate-200 bg-white rounded-lg p-8 hover:shadow-xl transition relative">
                             <div className="text-gray-900 font-bold uppercase text-xs tracking-wider mb-2">Corporate</div>
                             <h3 className="text-2xl font-bold text-gray-900 mb-4">Recruitment Partner</h3>
-                            <ul className="text-sm text-gray-600 space-y-3 mb-8">
-                                <li className="flex gap-2"><Icon name="check" size={16} className="text-navy-dark" /> Access to Talent Database</li>
-                                <li className="flex gap-2"><Icon name="check" size={16} className="text-navy-dark" /> Pre-Vetted Candidates</li>
-                                <li className="flex gap-2"><Icon name="check" size={16} className="text-navy-dark" /> Visa Handling Service</li>
+                            <ul className="text-sm text-gray-600 space-y-4 mb-8">
+                                <li className="flex gap-3"><Icon name="check" size={18} className="text-navy-dark" /> Access to Talent Database</li>
+                                <li className="flex gap-3"><Icon name="check" size={18} className="text-navy-dark" /> Pre-Vetted Candidates</li>
+                                <li className="flex gap-3"><Icon name="check" size={18} className="text-navy-dark" /> Visa Handling Service</li>
                             </ul>
-                            <button className="w-full py-2 bg-navy-dark text-white font-bold text-sm uppercase rounded hover:bg-gray-800 transition">Contact Us</button>
+                            <button className="w-full py-3 bg-navy-dark text-white font-bold text-sm uppercase rounded hover:bg-black transition">Contact Us</button>
                         </div>
                     </div>
                 </div>
@@ -303,35 +318,35 @@
                             </p>
                             <ul className="space-y-4 mb-8">
                                 <li className="flex gap-3 items-center text-gray-700 font-medium">
-                                    <div className="w-8 h-8 rounded-full bg-peach-accent/10 flex items-center justify-center text-peach-accent"><Icon name="check" size={16} /></div>
+                                    <div className="w-8 h-8 rounded-full bg-navy-light flex items-center justify-center text-navy-primary"><Icon name="check" size={14} /></div>
                                     Application Fee Waivers
                                 </li>
                                 <li className="flex gap-3 items-center text-gray-700 font-medium">
-                                    <div className="w-8 h-8 rounded-full bg-peach-accent/10 flex items-center justify-center text-peach-accent"><Icon name="check" size={16} /></div>
+                                    <div className="w-8 h-8 rounded-full bg-navy-light flex items-center justify-center text-navy-primary"><Icon name="check" size={14} /></div>
                                     Visa Interview Preparation
                                 </li>
                                 <li className="flex gap-3 items-center text-gray-700 font-medium">
-                                    <div className="w-8 h-8 rounded-full bg-peach-accent/10 flex items-center justify-center text-peach-accent"><Icon name="check" size={16} /></div>
+                                    <div className="w-8 h-8 rounded-full bg-navy-light flex items-center justify-center text-navy-primary"><Icon name="check" size={14} /></div>
                                     Document Translation Services
                                 </li>
                             </ul>
                             <button className="bg-navy-primary text-white px-8 py-3 rounded font-bold uppercase hover:bg-navy-dark transition shadow-md">Start Application</button>
                         </div>
                         <div className="md:w-1/2 grid grid-cols-2 gap-4">
-                            <div className="bg-white p-6 rounded shadow-sm border border-gray-100 text-center hover:shadow-lg transition cursor-pointer hover:border-peach">
-                                <div className="text-4xl mb-2">🇫🇷</div>
+                            <div className="bg-white p-6 rounded shadow-sm border border-gray-100 text-center hover:shadow-lg transition cursor-pointer hover:border-peach-accent group">
+                                <div className="text-4xl mb-2 group-hover:scale-110 transition">🇫🇷</div>
                                 <div className="font-bold text-gray-800">France</div>
                             </div>
-                            <div className="bg-white p-6 rounded shadow-sm border border-gray-100 text-center hover:shadow-lg transition cursor-pointer hover:border-peach">
-                                <div className="text-4xl mb-2">🇩🇪</div>
+                            <div className="bg-white p-6 rounded shadow-sm border border-gray-100 text-center hover:shadow-lg transition cursor-pointer hover:border-peach-accent group">
+                                <div className="text-4xl mb-2 group-hover:scale-110 transition">🇩🇪</div>
                                 <div className="font-bold text-gray-800">Germany</div>
                             </div>
-                            <div className="bg-white p-6 rounded shadow-sm border border-gray-100 text-center hover:shadow-lg transition cursor-pointer hover:border-peach">
-                                <div className="text-4xl mb-2">🇮🇪</div>
+                            <div className="bg-white p-6 rounded shadow-sm border border-gray-100 text-center hover:shadow-lg transition cursor-pointer hover:border-peach-accent group">
+                                <div className="text-4xl mb-2 group-hover:scale-110 transition">🇮🇪</div>
                                 <div className="font-bold text-gray-800">Ireland</div>
                             </div>
-                            <div className="bg-white p-6 rounded shadow-sm border border-gray-100 text-center hover:shadow-lg transition cursor-pointer hover:border-peach">
-                                <div className="text-4xl mb-2">🇪🇸</div>
+                            <div className="bg-white p-6 rounded shadow-sm border border-gray-100 text-center hover:shadow-lg transition cursor-pointer hover:border-peach-accent group">
+                                <div className="text-4xl mb-2 group-hover:scale-110 transition">🇪🇸</div>
                                 <div className="font-bold text-gray-800">Spain</div>
                             </div>
                         </div>
@@ -342,7 +357,7 @@
 
         // 7. Maison Alora
         const MaisonAlora = () => (
-            <div id="maison" className="py-24 bg-gray-50">
+            <div id="maison" className="py-24 bg-navy-light">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="text-center mb-12">
                         <div className="text-peach-accent font-bold uppercase tracking-widest text-sm mb-2">Maison Alora</div>
@@ -365,7 +380,7 @@
                             <div className="absolute top-0 right-0 p-4 opacity-10"><Icon name="building" size={100} /></div>
                             <div className="mb-6 text-peach-accent"><Icon name="key" size={40} /></div>
                             <h3 className="text-2xl font-bold mb-4">For Landlords</h3>
-                            <p className="text-gray-200 mb-6 flex-grow">
+                            <p className="text-slate-300 mb-6 flex-grow">
                                 List your property with Maison Alora to reach thousands of pre-vetted international students. We ensure reliable tenants.
                             </p>
                             <button className="w-full bg-white text-navy-primary font-bold py-3 rounded hover:bg-gray-100 transition">List Your Property</button>
@@ -382,35 +397,17 @@
                     <div className="text-navy-primary font-bold uppercase tracking-widest text-sm mb-2">The INSPIRE Programme</div>
                     <h2 className="text-3xl md:text-4xl font-bold text-navy-primary mb-12">Integration Through Action</h2>
 
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <div className="flex justify-center">
                         {/* Mentorship */}
-                        <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition border-t-4 border-peach-accent transform hover:-translate-y-1">
+                        <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition border-t-4 border-peach-accent transform hover:-translate-y-1 max-w-md w-full">
                             <div className="w-16 h-16 bg-peach-accent/10 rounded-full flex items-center justify-center mx-auto mb-6 text-peach-accent">
                                 <Icon name="users" size={32} />
                             </div>
                             <h3 className="text-xl font-bold mb-3 text-navy-primary">Mentorship</h3>
                             <p className="text-gray-600 text-sm mb-6">We pair you with local French families for cultural exchange.</p>
-                            <button className="text-white bg-peach-accent font-bold text-sm uppercase tracking-wide px-6 py-3 rounded shadow hover:bg-peach-dark transition w-full">
+                            <button className="text-white bg-peach-accent font-bold text-sm uppercase tracking-wide px-6 py-3 rounded shadow hover:bg-orange-700 transition w-full">
                                 I am a Host Family
                             </button>
-                        </div>
-
-                        {/* Eco Fashion */}
-                        <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-lg transition border-t-4 border-navy-primary">
-                            <div className="w-16 h-16 bg-navy-light rounded-full flex items-center justify-center mx-auto mb-6 text-navy-primary">
-                                <Icon name="shirt" size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold mb-3 text-navy-primary">Eco-Fashion</h3>
-                            <p className="text-gray-600 text-sm">Join workshops to design sustainable clothing and build networks.</p>
-                        </div>
-
-                        {/* Gardening */}
-                        <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-lg transition border-t-4 border-navy-primary">
-                            <div className="w-16 h-16 bg-navy-light rounded-full flex items-center justify-center mx-auto mb-6 text-navy-primary">
-                                <Icon name="flower2" size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold mb-3 text-navy-primary">Urban Gardening</h3>
-                            <p className="text-gray-600 text-sm">Grow food in your studio with our 'Balcony-to-Bowl' kits.</p>
                         </div>
                     </div>
                 </div>
@@ -425,16 +422,16 @@
                         <div className="md:w-1/2">
                             <div className="text-peach-accent font-bold uppercase tracking-widest text-sm mb-2">For Companies</div>
                             <h2 className="text-3xl md:text-4xl font-bold mb-6">Recruit Vetted Global Talent</h2>
-                            <p className="text-gray-300 mb-8 text-lg">
+                            <p className="text-slate-300 mb-8 text-lg">
                                 Stop sifting through resumes. Partner with Alora Talent to access a pre-screened pool of international students who are already integrated.
                             </p>
-                            <button className="bg-peach-accent text-navy-primary font-bold py-3 px-8 rounded hover:bg-white transition">Request Talent Access</button>
+                            <button className="bg-peach-accent text-navy-dark font-bold py-3 px-8 rounded hover:bg-white transition">Request Talent Access</button>
                         </div>
-                        <div className="md:w-1/2 bg-white/5 p-8 rounded-lg border border-white/10">
+                        <div className="md:w-1/2 bg-white/5 p-8 rounded-lg border border-white/10 backdrop-blur-sm">
                             <h3 className="text-xl font-bold mb-6">Partner Inquiry</h3>
                             <div className="space-y-4">
-                                <input type="text" placeholder="Company Name" className="w-full bg-white/10 border-none rounded p-3 text-white focus:ring-2 focus:ring-peach-accent" />
-                                <input type="email" placeholder="HR Contact Email" className="w-full bg-white/10 border-none rounded p-3 text-white focus:ring-2 focus:ring-peach-accent" />
+                                <input type="text" placeholder="Company Name" className="w-full bg-white/10 border-none rounded p-3 text-white focus:ring-2 focus:ring-peach-accent placeholder-slate-400" />
+                                <input type="email" placeholder="HR Contact Email" className="w-full bg-white/10 border-none rounded p-3 text-white focus:ring-2 focus:ring-peach-accent placeholder-slate-400" />
                                 <button className="w-full bg-white text-navy-dark font-bold py-3 rounded transition hover:bg-gray-200">Submit Request</button>
                             </div>
                         </div>
@@ -445,29 +442,29 @@
 
         // 10. Footer
         const Footer = () => (
-            <footer className="bg-gray-900 text-gray-400 py-16">
+            <footer className="bg-navy-dark text-slate-400 py-16 border-t border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-4 gap-12 text-sm">
                     <div className="col-span-1 md:col-span-1">
                         <div className="flex items-center gap-2 mb-6">
-                            <div className="bg-navy-primary text-white p-2 rounded">
-                                <Icon name="globe" size={20} />
-                            </div>
-                            <span className="font-bold text-xl text-white tracking-tight">ALORA GROUP</span>
+                            {/* Replaced Icon with Logo - Blended Mode for Dark Background */}
+                            {/* Invert makes it light-on-black, Screen makes black transparent */}
+                            <img src="logo.png" alt="Alora Group" className="h-16 w-auto object-contain filter invert mix-blend-screen opacity-90" />
                         </div>
-                        <p className="mb-6">
+                        <p className="mb-6 text-slate-500">
                             Your global partner for Education, Living, and Employment.
                         </p>
+
                         <div className="flex gap-4">
-                            <a href="https://www.linkedin.com/company/maisoalora" className="hover:text-white transition"><Icon name="linkedin" size={18} /></a>
+                            <a href="https://www.linkedin.com/company/maisoalora" target="_blank" className="hover:text-white transition"><Icon name="linkedin" size={18} /></a>
                         </div>
                     </div>
 
                     <div>
                         <h4 className="text-white font-bold uppercase tracking-wider mb-6">Socials</h4>
                         <ul className="space-y-3">
-                            <li><a href="https://www.instagram.com/maisonalora" className="hover:text-peach-accent transition flex items-center gap-2"><Icon name="instagram" size={14} /> @maisonalora</a></li>
-                            <li><a href="https://www.tiktok.com/@maisonalora" className="hover:text-peach-accent transition flex items-center gap-2"><Icon name="video" size={14} /> Tiktok: @Maisonalora</a></li>
-                            <li><a href="https://www.youtube.com/@Edualora" className="hover:text-peach-accent transition flex items-center gap-2"><Icon name="youtube" size={14} /> @Edualora</a></li>
+                            <li><a href="https://www.instagram.com/maisonalora" target="_blank" className="hover:text-peach-accent transition flex items-center gap-2"><Icon name="instagram" size={14} /> @maisonalora</a></li>
+                            <li><a href="https://www.tiktok.com/@maisonalora" target="_blank" className="hover:text-peach-accent transition flex items-center gap-2"><Icon name="video" size={14} /> Tiktok: @Maisonalora</a></li>
+                            <li><a href="https://www.youtube.com/@Edualora" target="_blank" className="hover:text-peach-accent transition flex items-center gap-2"><Icon name="youtube" size={14} /> @Edualora</a></li>
                         </ul>
                     </div>
 
@@ -482,15 +479,15 @@
                     <div>
                         <h4 className="text-white font-bold uppercase tracking-wider mb-6">Call Us</h4>
                         <ul className="space-y-3">
-                            <li className="flex gap-3"><Icon name="phone" size={16} className="text-peach-accent" /> +33 7 84 76 17 95 (WhatsApp)</li>
-                            <li className="flex gap-3"><Icon name="phone" size={16} className="text-peach-accent" /> +33 6 41 26 75 62 (Call/WA)</li>
+                            <li className="flex gap-3"><a href="https://wa.me/33784761795" target="_blank" className="hover:text-peach-accent flex items-center gap-2 transition"><Icon name="phone" size={16} /> +33 7 84 76 17 95 (WhatsApp)</a></li>
+                            <li className="flex gap-3"><a href="tel:+33641267562" className="hover:text-peach-accent flex items-center gap-2 transition"><Icon name="phone" size={16} /> +33 6 41 26 75 62 (Call/WA)</a></li>
                         </ul>
                     </div>
                 </div>
-                <div className="border-t border-gray-800 mt-16 pt-8 text-center text-xs">
+                <div className="border-t border-slate-800 mt-16 pt-8 text-center text-xs text-slate-600">
                     Copyright © 2025 Alora Group. All Rights Reserved.
                 </div>
-            </footer>
+            </footer >
         );
 
         const App = () => (
