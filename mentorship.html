@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INSPIRE Mentorship Portal | Alora Group</title>
+    <title>Integration & Mentorship | Alora Group</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -19,17 +19,20 @@
             background-color: #FFF7ED;
         }
 
-        /* Warm background */
         h1,
         h2,
         h3,
         h4,
-        .nav-link {
+        .nav-text {
             font-family: 'Montserrat', sans-serif;
         }
 
         .bg-navy-primary {
             background-color: #1E3A8A;
+        }
+
+        .bg-navy-dark {
+            background-color: #0F172A;
         }
 
         .text-navy-primary {
@@ -47,6 +50,22 @@
         .border-peach-accent {
             border-color: #D9654C;
         }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -54,7 +73,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
 
         const Icon = ({ name, size = 20, className = "" }) => {
             const iconName = name.charAt(0).toUpperCase() + name.slice(1);
@@ -67,20 +86,24 @@
             );
         };
 
+        // SHARED NAVIGATION BAR for accessibility across portals
         const NavBar = () => (
-            <nav className="bg-white shadow-sm sticky top-0 z-50">
+            <nav className="bg-navy-dark text-white shadow-md sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex justify-between h-20 items-center">
                         <div className="flex items-center gap-3">
                             <a href="index.html">
-                                <img src="logo.png" alt="Alora" className="h-16 w-auto object-contain" />
+                                <img src="logo.png" alt="Alora" className="h-12 w-auto object-contain filter invert mix-blend-screen" />
                             </a>
-                            <span className="font-bold text-navy-primary text-xl tracking-tight hidden md:block">INSPIRE MENTORSHIP</span>
+                            <span className="font-bold text-white text-lg tracking-wider border-l border-gray-600 pl-4 ml-2 nav-text">INSPIRE INTEGRATION</span>
                         </div>
+
+
+
                         <div className="flex items-center gap-4">
-                            <a href="#" className="font-bold text-gray-500 hover:text-peach-accent text-sm">Community Forum</a>
-                            <a href="#" className="font-bold text-gray-500 hover:text-peach-accent text-sm">Events</a>
-                            <button className="bg-peach-accent px-5 py-2 rounded-full text-white text-xs font-bold uppercase hover:bg-orange-700 transition">My Family Profile</button>
+                            <a href="#" className="flex items-center gap-2 text-peach-accent text-sm font-bold uppercase hover:text-white transition">
+                                <Icon name="logOut" size={16} /> Sign Out
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -88,68 +111,166 @@
         );
 
         const Dashboard = () => {
+            const [activeTab, setActiveTab] = useState('matches');
+            const [showContractModal, setShowContractModal] = useState(false);
+            const [selectedMentee, setSelectedMentee] = useState(null);
+
+            // Mock Data for "Integration Mate" Matching
+            const mentees = [
+                { id: 1, name: 'Yuki T.', origin: 'Japan', program: 'MBA', interests: ['French History', 'Cooking'], matchScore: 95 },
+                { id: 2, name: 'Elena R.', origin: 'Spain', program: 'Erasmus', interests: ['Cinema', 'Surfing'], matchScore: 88 },
+                { id: 3, name: 'Ahmed K.', origin: 'Egypt', program: 'Engineering', interests: ['Football', 'Tech'], matchScore: 82 },
+            ];
+
+            const initiateContract = (mentee) => {
+                setSelectedMentee(mentee);
+                setShowContractModal(true);
+            };
+
             return (
-                <div className="max-w-7xl mx-auto px-4 py-12">
-                    <div className="text-center mb-12">
-                        <h1 className="text-3xl md:text-5xl font-bold text-navy-primary mb-4">Connect. Share. Inspire.</h1>
-                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">Browse profiles of international students looking to practice French and learn about your culture.</p>
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    {/* Header */}
+                    <header className="mb-8 flex justify-between items-end">
+                        <div>
+                            <h1 className="text-3xl font-bold text-navy-primary mb-2">Integration & Mentorship</h1>
+                            <p className="text-gray-600">Connect with international students and help them settle in France.</p>
+                        </div>
+                        <div className="bg-white px-4 py-2 rounded shadow-sm border border-gray-200">
+                            <span className="text-xs font-bold text-gray-400 uppercase block">Your Profile Status</span>
+                            <span className="text-green-600 font-bold flex items-center gap-1"><Icon name="checkCircle" size={16} /> Verified Mentor</span>
+                        </div>
+                    </header>
+
+                    {/* Tabs */}
+                    <div className="flex gap-6 border-b border-gray-300 mb-8">
+                        <button
+                            onClick={() => setActiveTab('matches')}
+                            className={`pb-4 px-2 font-bold text-sm uppercase transition ${activeTab === 'matches' ? 'text-navy-primary border-b-4 border-navy-primary' : 'text-gray-400 hover:text-navy-primary'}`}
+                        >
+                            Smart Matches
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('agreements')}
+                            className={`pb-4 px-2 font-bold text-sm uppercase transition ${activeTab === 'agreements' ? 'text-navy-primary border-b-4 border-navy-primary' : 'text-gray-400 hover:text-navy-primary'}`}
+                        >
+                            My Agreements
+                        </button>
                     </div>
 
-                    <div className="flex flex-col md:flex-row gap-8">
-                        {/* Filters */}
-                        <div className="w-full md:w-1/4">
-                            <div className="bg-white p-6 rounded-xl shadow-md sticky top-24">
-                                <h3 className="font-bold text-navy-primary mb-4 flex items-center gap-2"><Icon name="filter" size={18} /> Filters</h3>
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-500 uppercase">Native Language</label>
-                                        <div className="mt-2 space-y-2">
-                                            <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" className="rounded text-peach-accent focus:ring-peach-accent" /> English</label>
-                                            <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" className="rounded text-peach-accent focus:ring-peach-accent" /> Spanish</label>
-                                            <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" className="rounded text-peach-accent focus:ring-peach-accent" /> Mandarin</label>
+                    {/* CONTENT Area */}
+                    <div className="min-h-[400px]">
+
+                        {/* MATCHES SECTION */}
+                        {activeTab === 'matches' && (
+                            <div className="animate-fade-in grid md:grid-cols-3 gap-6">
+                                {mentees.map(mentee => (
+                                    <div key={mentee.id} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-xl transition group">
+                                        <div className="h-20 bg-gradient-to-r from-blue-600 to-navy-primary relative">
+                                            <div className="absolute top-4 right-4 bg-white/20 backdrop-blur px-2 py-1 rounded text-white text-xs font-bold">
+                                                {mentee.matchScore}% Compatibility
+                                            </div>
+                                        </div>
+                                        <div className="px-6 pb-6 relative">
+                                            <div className="w-16 h-16 -mt-8 bg-white p-1 rounded-full mb-3">
+                                                <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-xl">
+                                                    {mentee.name.charAt(0)}
+                                                </div>
+                                            </div>
+
+                                            <h3 className="font-bold text-lg text-gray-900">{mentee.name}</h3>
+                                            <p className="text-sm text-gray-500 mb-4">{mentee.origin} • {mentee.program}</p>
+
+                                            <div className="flex flex-wrap gap-2 mb-6">
+                                                {mentee.interests.map((tag, i) => (
+                                                    <span key={i} className="text-[10px] uppercase font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded">{tag}</span>
+                                                ))}
+                                            </div>
+
+                                            <button
+                                                onClick={() => initiateContract(mentee)}
+                                                className="w-full py-2 bg-navy-primary text-white font-bold rounded-lg text-sm hover:bg-navy-dark transition flex items-center justify-center gap-2"
+                                            >
+                                                Start Mentorship <Icon name="arrowRight" size={16} />
+                                            </button>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-500 uppercase">Interests</label>
-                                        <div className="mt-2 space-y-2">
-                                            <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" className="rounded text-peach-accent focus:ring-peach-accent" /> Cooking</label>
-                                            <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" className="rounded text-peach-accent focus:ring-peach-accent" /> Sports</label>
-                                            <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" className="rounded text-peach-accent focus:ring-peach-accent" /> Arts</label>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* AGREEMENTS SECTION */}
+                        {activeTab === 'agreements' && (
+                            <div className="animate-fade-in">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                                        <Icon name="fileText" size={32} />
+                                    </div>
+                                    <h3 className="font-bold text-gray-900 mb-2">No Active Agreements</h3>
+                                    <p className="text-gray-500 max-w-md mx-auto mb-6">Once you match with a student and sign the digital mentorship contract, it will appear here for your reference.</p>
+                                    <button onClick={() => setActiveTab('matches')} className="text-peach-accent font-bold text-sm hover:underline">Find a Mentee</button>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+
+                    {/* CONTRACT MODAL */}
+                    {showContractModal && selectedMentee && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in p-4">
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden">
+                                <div className="bg-navy-primary text-white p-6 flex justify-between items-center">
+                                    <h3 className="font-bold text-lg flex items-center gap-2"><Icon name="penTool" /> Mentorship Contract</h3>
+                                    <button onClick={() => setShowContractModal(false)} className="text-white/70 hover:text-white"><Icon name="x" /></button>
+                                </div>
+                                <div className="p-6 max-h-[60vh] overflow-y-auto bg-gray-50">
+                                    <div className="bg-white p-8 shadow-sm border border-gray-200 mb-6">
+                                        <h2 className="text-center font-bold text-xl text-navy-primary mb-6 uppercase tracking-widest border-b pb-4">Mentorship Agreement</h2>
+
+                                        <div className="space-y-6 text-sm text-gray-700">
+                                            <p><strong>Parties:</strong></p>
+                                            <ul className="list-disc pl-5">
+                                                <li><strong>Mentor:</strong> [Current User]</li>
+                                                <li><strong>Mentee:</strong> {selectedMentee.name}</li>
+                                            </ul>
+
+                                            <p><strong>Commitment:</strong></p>
+                                            <p>The Mentor agrees to provide guidance, cultural insight, and support to help the Mentee integrate into life in France. This includes at least one meeting per month.</p>
+
+                                            <p><strong>Duration:</strong></p>
+                                            <p>This agreement is valid for one academic semester, renewable upon mutual agreement.</p>
+                                        </div>
+
+                                        <div className="mt-8 pt-8 border-t border-gray-100 flex justify-between items-end">
+                                            <div className="w-1/2 pr-4">
+                                                <div className="h-12 border-b-2 border-dashed border-gray-300 mb-2"></div>
+                                                <p className="text-xs uppercase font-bold text-gray-400">Signature of Mentor</p>
+                                            </div>
+                                            <div className="w-1/2 pl-4">
+                                                <div className="h-12 border-b-2 border-dashed border-gray-300 mb-2 bg-gray-50 flex items-center px-2 text-xs italic text-gray-400">
+                                                    Waiting for {selectedMentee.name}...
+                                                </div>
+                                                <p className="text-xs uppercase font-bold text-gray-400">Signature of Mentee</p>
+                                            </div>
                                         </div>
                                     </div>
+                                </div>
+                                <div className="p-6 border-t border-gray-100 bg-white flex justify-end gap-3">
+                                    <button onClick={() => setShowContractModal(false)} className="px-4 py-2 border border-gray-300 text-gray-600 font-bold rounded text-sm hover:bg-gray-50">Cancel</button>
+                                    <button
+                                        onClick={() => {
+                                            alert(`Contract sent to ${selectedMentee.name} for signature!`);
+                                            setShowContractModal(false);
+                                            setActiveTab('agreements');
+                                        }}
+                                        className="px-6 py-2 bg-green-600 text-white font-bold rounded text-sm hover:bg-green-700 shadow flex items-center gap-2"
+                                    >
+                                        <Icon name="send" size={16} /> Sign & Send
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                        {/* Student Grid */}
-                        <div className="w-full md:w-3/4 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[1, 2, 3, 4, 5, 6].map(i => (
-                                <div key={i} className="bg-white rounded-xl shadow-md hover:shadow-xl transition overflow-hidden group">
-                                    <div className="h-24 bg-gradient-to-r from-peach-accent to-orange-400"></div>
-                                    <div className="px-6 pb-6 -mt-10 relative">
-                                        <div className="w-20 h-20 bg-gray-200 rounded-full border-4 border-white mx-auto overflow-hidden">
-                                            {/* Mock Avatar */}
-                                            <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500"><Icon name="user" /></div>
-                                        </div>
-                                        <div className="text-center mt-3">
-                                            <h3 className="font-bold text-navy-primary text-lg">Alexandre K.</h3>
-                                            <p className="text-xs text-gray-500 uppercase tracking-wide">From Germany • 21yo</p>
-                                        </div>
-                                        <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                                            <span className="px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded-full">Cinema</span>
-                                            <span className="px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded-full">Hiking</span>
-                                        </div>
-                                        <div className="mt-6">
-                                            <p className="text-sm text-gray-600 text-center italic">"Eager to improve my French conversation skills!"</p>
-                                        </div>
-                                        <button className="w-full mt-6 bg-navy-primary text-white py-2 rounded-lg font-bold text-sm uppercase gap-2 flex items-center justify-center hover:bg-navy-dark transition group-hover:scale-105 transform">
-                                            <Icon name="messageCircle" size={16} /> Contact
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             );
         };
