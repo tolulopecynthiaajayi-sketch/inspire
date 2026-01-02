@@ -127,7 +127,9 @@
             const [isSearching, setIsSearching] = useState(false);
             const [searchResults, setSearchResults] = useState(null);
 
-            // Mock Intake Data
+            const [activeTab, setActiveTab] = useState('intakes');
+
+            // 1. Mock Intake Data
             const intakes = [
                 {
                     id: 1,
@@ -155,6 +157,24 @@
                 }
             ];
 
+            // 2. Mock Property Data (from Landlord Portal)
+            const properties = [
+                { id: 1, title: 'Studio Montmartre', landlord: 'Pierre D.', price: '€950', location: '18th Arr.', status: 'Pending Verification' },
+                { id: 2, title: '2BR Le Marais', landlord: 'Pierre D.', price: '€1800', location: '4th Arr.', status: 'Active' }
+            ];
+
+            // 3. Mock Job Data (from Corporate Portal)
+            const jobs = [
+                { id: 1, title: 'Marketing Intern', company: 'TechCorp', type: 'Remote', status: 'Pending Approval' },
+                { id: 2, title: 'Junior Developer', company: 'TechCorp', type: 'Paris', status: 'Active' }
+            ];
+
+            // 4. Mock Mentorship Data (from Host Family Portal)
+            const families = [
+                { id: 1, name: 'The Dubois Family', location: 'Lyon', status: 'Verified' },
+                { id: 2, name: 'Sophie & Marc', location: 'Paris', status: 'Pending Verification' }
+            ];
+
             const runPearchBot = () => {
                 setIsSearching(true);
                 setSearchResults(null);
@@ -172,139 +192,247 @@
 
             return (
                 <div className="max-w-7xl mx-auto px-4 py-8">
-                    <div className="flex flex-col lg:flex-row gap-8 min-h-[600px]">
+                    {/* Tabs */}
+                    <div className="flex gap-4 border-b border-gray-200 mb-8">
+                        {['intakes', 'housing', 'jobs', 'mentorship'].map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`pb-3 px-4 text-sm font-bold uppercase tracking-wide transition ${activeTab === tab ? 'text-navy-primary border-b-2 border-navy-primary' : 'text-gray-400 hover:text-navy-primary'}`}
+                            >
+                                {tab === 'intakes' ? 'Student Intakes' : tab === 'housing' ? 'Property Approvals' : tab === 'jobs' ? 'Job Board' : 'Mentorships'}
+                            </button>
+                        ))}
+                    </div>
 
-                        {/* LEFT: Intake Queue */}
-                        <div className="w-full lg:w-1/3 space-y-4">
-                            <h2 className="font-bold text-xl text-navy-primary mb-4 flex items-center gap-2">
-                                <Icon name="inbox" /> Student Intakes
-                            </h2>
-                            {intakes.map(student => (
-                                <div
-                                    key={student.id}
-                                    onClick={() => { setSelectedStudent(student); setSearchResults(null); }}
-                                    className={`p-4 rounded-lg cursor-pointer border transition hover:shadow-md ${selectedStudent?.id === student.id ? 'bg-white border-peach-accent shadow-md' : 'bg-white border-gray-200 hover:border-blue-300'}`}
-                                >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-gray-800">{student.name}</h3>
-                                        {student.status === 'New' && <span className="bg-peach-accent text-white text-[10px] px-2 py-1 rounded-full font-bold uppercase">New</span>}
-                                    </div>
-                                    <p className="text-sm text-gray-600 mb-1">{student.degree}</p>
-                                    <div className="flex flex-wrap gap-1">
-                                        {student.preferences.slice(0, 2).map((p, i) => (
-                                            <span key={i} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{p}</span>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                    {activeTab === 'intakes' && (
+                        <div className="flex flex-col lg:flex-row gap-8 min-h-[600px]">
 
-                        {/* RIGHT: Detail & Work Area */}
-                        <div className="w-full lg:w-2/3">
-                            {selectedStudent ? (
-                                <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-h-full">
-                                    {/* Header */}
-                                    <div className="bg-navy-dark p-6 text-white flex justify-between items-start">
-                                        <div>
-                                            <h2 className="text-2xl font-bold mb-1">{selectedStudent.name}</h2>
-                                            <p className="opacity-80 text-sm flex items-center gap-4">
-                                                <span><Icon name="mapPin" size={14} className="inline mr-1" /> {selectedStudent.origin}</span>
-                                                <span><Icon name="graduationCap" size={14} className="inline mr-1" /> GPA: {selectedStudent.gpa}</span>
-                                            </p>
+                            {/* LEFT: Intake Queue */}
+                            <div className="w-full lg:w-1/3 space-y-4">
+                                <h2 className="font-bold text-xl text-navy-primary mb-4 flex items-center gap-2">
+                                    <Icon name="inbox" /> Student Intakes
+                                </h2>
+                                {intakes.map(student => (
+                                    <div
+                                        key={student.id}
+                                        onClick={() => { setSelectedStudent(student); setSearchResults(null); }}
+                                        className={`p-4 rounded-lg cursor-pointer border transition hover:shadow-md ${selectedStudent?.id === student.id ? 'bg-white border-peach-accent shadow-md' : 'bg-white border-gray-200 hover:border-blue-300'}`}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-bold text-gray-800">{student.name}</h3>
+                                            {student.status === 'New' && <span className="bg-peach-accent text-white text-[10px] px-2 py-1 rounded-full font-bold uppercase">New</span>}
                                         </div>
-                                        <div className="text-right text-xs opacity-70">
-                                            ID: #{selectedStudent.id}2024
+                                        <p className="text-sm text-gray-600 mb-1">{student.degree}</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {student.preferences.slice(0, 2).map((p, i) => (
+                                                <span key={i} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{p}</span>
+                                            ))}
                                         </div>
                                     </div>
+                                ))}
+                            </div>
 
-                                    {/* Action Bar */}
-                                    <div className="p-6 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                                        <div className="text-sm text-gray-600">
-                                            <strong>Goal:</strong> Seeking {selectedStudent.degree.includes('BSc') ? 'Master\'s' : 'Bachelor'} programs in France.
+                            {/* RIGHT: Detail & Work Area */}
+                            <div className="w-full lg:w-2/3">
+                                {selectedStudent ? (
+                                    <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-h-full">
+                                        {/* Header */}
+                                        <div className="bg-navy-dark p-6 text-white flex justify-between items-start">
+                                            <div>
+                                                <h2 className="text-2xl font-bold mb-1">{selectedStudent.name}</h2>
+                                                <p className="opacity-80 text-sm flex items-center gap-4">
+                                                    <span><Icon name="mapPin" size={14} className="inline mr-1" /> {selectedStudent.origin}</span>
+                                                    <span><Icon name="graduationCap" size={14} className="inline mr-1" /> GPA: {selectedStudent.gpa}</span>
+                                                </p>
+                                            </div>
+                                            <div className="text-right text-xs opacity-70">
+                                                ID: #{selectedStudent.id}2024
+                                            </div>
                                         </div>
+
+                                        {/* Action Bar */}
+                                        <div className="p-6 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                            <div className="text-sm text-gray-600">
+                                                <strong>Goal:</strong> Seeking {selectedStudent.degree.includes('BSc') ? 'Master\'s' : 'Bachelor'} programs in France.
+                                            </div>
+                                            {!searchResults && !isSearching && (
+                                                <button
+                                                    onClick={runPearchBot}
+                                                    className="bg-navy-primary text-white px-6 py-2 rounded shadow hover:bg-navy-dark transition font-bold flex items-center gap-2 animate-pulse"
+                                                >
+                                                    <Icon name="sparkles" size={18} /> Run AI Study Matcher
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Searching State */}
+                                        {isSearching && (
+                                            <div className="p-12 flex flex-col items-center justify-center text-center">
+                                                <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
+                                                    <div className="absolute inset-0 bg-peach-accent rounded-full opacity-20 animate-pulse-ring"></div>
+                                                    <div className="relative bg-white p-4 rounded-full shadow-lg border-2 border-peach-accent text-peach-accent">
+                                                        <Icon name="globe" size={32} className="animate-spin-slow" />
+                                                    </div>
+                                                </div>
+                                                <h3 className="text-xl font-bold text-navy-primary mb-2">AI Agent is Scouring Databases...</h3>
+                                                <p className="text-gray-500 max-w-md">Scanning 'Campus France', 'Bachelors in English', and 'Masters Portal' for best matches based on {selectedStudent.name}'s profile.</p>
+                                            </div>
+                                        )}
+
+                                        {/* Results State */}
+                                        {searchResults && (
+                                            <div className="p-6 animate-fade-in">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                                                        <Icon name="checkCircle" className="text-green-500" /> AI Found 3 Matches
+                                                    </h3>
+                                                    <button className="text-sm text-navy-primary hover:underline">Download Report</button>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    {searchResults.map((result, i) => (
+                                                        <div key={result.id} className="border border-gray-200 rounded-lg p-5 hover:border-peach-accent transition group relative">
+                                                            <div className="absolute top-4 right-4 text-green-600 font-bold text-xl">{result.match}%</div>
+                                                            <h4 className="font-bold text-navy-primary text-lg mb-1">{result.program}</h4>
+                                                            <p className="text-gray-600 font-semibold mb-2">{result.school}, {result.city}</p>
+                                                            <div className="flex gap-4 text-xs text-gray-500 mb-4">
+                                                                <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">Language: {result.language}</span>
+                                                                <span className="bg-gray-100 px-2 py-1 rounded">Tuition: €12k/yr</span>
+                                                            </div>
+                                                            <div className="flex gap-3">
+                                                                <button className="bg-navy-primary text-white px-4 py-2 rounded text-sm font-bold hover:bg-navy-dark flex-1">Select for Application</button>
+                                                                <a href="#" className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm font-bold hover:bg-gray-50 text-center">View Details</a>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Empty State / Initial View */}
                                         {!searchResults && !isSearching && (
-                                            <button
-                                                onClick={runPearchBot}
-                                                className="bg-navy-primary text-white px-6 py-2 rounded shadow hover:bg-navy-dark transition font-bold flex items-center gap-2 animate-pulse"
-                                            >
-                                                <Icon name="sparkles" size={18} /> Run AI Study Matcher
-                                            </button>
+                                            <div className="p-8">
+                                                <h4 className="font-bold text-gray-700 mb-4">Intake Details</h4>
+                                                <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                                                    <div>
+                                                        <span className="block text-gray-400 text-xs uppercase">Languages</span>
+                                                        <span className="font-semibold text-gray-800">English ({selectedStudent.english}), French ({selectedStudent.french})</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-gray-400 text-xs uppercase">Course Preferences</span>
+                                                        <ul className="list-disc pl-4 text-gray-800">
+                                                            {selectedStudent.preferences.map(p => <li key={p}>{p}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
-
-                                    {/* Searching State */}
-                                    {isSearching && (
-                                        <div className="p-12 flex flex-col items-center justify-center text-center">
-                                            <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
-                                                <div className="absolute inset-0 bg-peach-accent rounded-full opacity-20 animate-pulse-ring"></div>
-                                                <div className="relative bg-white p-4 rounded-full shadow-lg border-2 border-peach-accent text-peach-accent">
-                                                    <Icon name="globe" size={32} className="animate-spin-slow" />
-                                                </div>
-                                            </div>
-                                            <h3 className="text-xl font-bold text-navy-primary mb-2">AI Agent is Scouring Databases...</h3>
-                                            <p className="text-gray-500 max-w-md">Scanning 'Campus France', 'Bachelors in English', and 'Masters Portal' for best matches based on {selectedStudent.name}'s profile.</p>
+                                ) : (
+                                    <div className="h-full flex items-center justify-center text-gray-400 bg-white rounded-lg border border-dashed border-gray-300 min-h-[400px]">
+                                        <div className="text-center">
+                                            <Icon name="arrowLeft" className="mx-auto mb-2 opacity-50" />
+                                            <p>Select a student to review</p>
                                         </div>
-                                    )}
-
-                                    {/* Results State */}
-                                    {searchResults && (
-                                        <div className="p-6 animate-fade-in">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                                                    <Icon name="checkCircle" className="text-green-500" /> AI Found 3 Matches
-                                                </h3>
-                                                <button className="text-sm text-navy-primary hover:underline">Download Report</button>
-                                            </div>
-
-                                            <div className="space-y-4">
-                                                {searchResults.map((result, i) => (
-                                                    <div key={result.id} className="border border-gray-200 rounded-lg p-5 hover:border-peach-accent transition group relative">
-                                                        <div className="absolute top-4 right-4 text-green-600 font-bold text-xl">{result.match}%</div>
-                                                        <h4 className="font-bold text-navy-primary text-lg mb-1">{result.program}</h4>
-                                                        <p className="text-gray-600 font-semibold mb-2">{result.school}, {result.city}</p>
-                                                        <div className="flex gap-4 text-xs text-gray-500 mb-4">
-                                                            <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">Language: {result.language}</span>
-                                                            <span className="bg-gray-100 px-2 py-1 rounded">Tuition: €12k/yr</span>
-                                                        </div>
-                                                        <div className="flex gap-3">
-                                                            <button className="bg-navy-primary text-white px-4 py-2 rounded text-sm font-bold hover:bg-navy-dark flex-1">Select for Application</button>
-                                                            <a href="#" className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm font-bold hover:bg-gray-50 text-center">View Details</a>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Empty State / Initial View */}
-                                    {!searchResults && !isSearching && (
-                                        <div className="p-8">
-                                            <h4 className="font-bold text-gray-700 mb-4">Intake Details</h4>
-                                            <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                                                <div>
-                                                    <span className="block text-gray-400 text-xs uppercase">Languages</span>
-                                                    <span className="font-semibold text-gray-800">English ({selectedStudent.english}), French ({selectedStudent.french})</span>
-                                                </div>
-                                                <div>
-                                                    <span className="block text-gray-400 text-xs uppercase">Course Preferences</span>
-                                                    <ul className="list-disc pl-4 text-gray-800">
-                                                        {selectedStudent.preferences.map(p => <li key={p}>{p}</li>)}
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-gray-400 bg-white rounded-lg border border-dashed border-gray-300 min-h-[400px]">
-                                    <div className="text-center">
-                                        <Icon name="arrowLeft" className="mx-auto mb-2 opacity-50" />
-                                        <p>Select a student to review</p>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* HOUSING APPROVALS */}
+                    {activeTab === 'housing' && (
+                        <div className="animate-fade-in">
+                            <h2 className="font-bold text-xl text-navy-primary mb-6 flex items-center gap-2"><Icon name="home" /> Property Verification Queue</h2>
+                            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+                                <table className="w-full text-left text-sm text-gray-600">
+                                    <thead className="bg-gray-50 uppercase text-xs font-bold text-gray-500 border-b border-gray-200">
+                                        <tr>
+                                            <th className="p-4">Property</th>
+                                            <th className="p-4">Landlord</th>
+                                            <th className="p-4">Price</th>
+                                            <th className="p-4">Location</th>
+                                            <th className="p-4">Status</th>
+                                            <th className="p-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {properties.map(p => (
+                                            <tr key={p.id} className="hover:bg-gray-50">
+                                                <td className="p-4 font-bold text-gray-800">{p.title}</td>
+                                                <td className="p-4">{p.landlord}</td>
+                                                <td className="p-4 text-peach-accent font-bold">{p.price}</td>
+                                                <td className="p-4">{p.location}</td>
+                                                <td className="p-4">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${p.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{p.status}</span>
+                                                </td>
+                                                <td className="p-4 text-right">
+                                                    <button className="text-green-600 hover:text-green-800 font-bold mr-3">Verify</button>
+                                                    <button className="text-red-500 hover:text-red-700 font-bold">Reject</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* JOB APPROVALS */}
+                    {activeTab === 'jobs' && (
+                        <div className="animate-fade-in">
+                            <h2 className="font-bold text-xl text-navy-primary mb-6 flex items-center gap-2"><Icon name="briefcase" /> Job Postings Review</h2>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {jobs.map(job => (
+                                    <div key={job.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center">
+                                        <div>
+                                            <h4 className="font-bold text-lg text-navy-primary">{job.title}</h4>
+                                            <p className="text-sm text-gray-500 mb-2">{job.company} • {job.type}</p>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${job.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{job.status}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <button className="bg-green-50 text-green-700 border border-green-200 px-4 py-2 rounded text-xs font-bold uppercase hover:bg-green-600 hover:text-white transition">Approve</button>
+                                            <button className="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded text-xs font-bold uppercase hover:bg-red-600 hover:text-white transition">Flag</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MENTORSHIP APPROVALS */}
+                    {activeTab === 'mentorship' && (
+                        <div className="animate-fade-in">
+                            <h2 className="font-bold text-xl text-navy-primary mb-6 flex items-center gap-2"><Icon name="users" /> Host Family Vetting</h2>
+                            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+                                <table className="w-full text-left text-sm text-gray-600">
+                                    <thead className="bg-gray-50 uppercase text-xs font-bold text-gray-500 border-b border-gray-200">
+                                        <tr>
+                                            <th className="p-4">Family Name</th>
+                                            <th className="p-4">Location</th>
+                                            <th className="p-4">Home Visit Status</th>
+                                            <th className="p-4">Background Check</th>
+                                            <th className="p-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {families.map(f => (
+                                            <tr key={f.id} className="hover:bg-gray-50">
+                                                <td className="p-4 font-bold text-gray-800">{f.name}</td>
+                                                <td className="p-4">{f.location}</td>
+                                                <td className="p-4"><span className="text-green-600 font-bold flex items-center gap-1"><Icon name="check" size={14} /> Completed</span></td>
+                                                <td className="p-4"><span className="text-gray-400 italic">Pending</span></td>
+                                                <td className="p-4 text-right">
+                                                    <button className="bg-navy-primary text-white px-3 py-1 rounded text-xs font-bold uppercase hover:bg-navy-dark">Vetter Dashboard</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
