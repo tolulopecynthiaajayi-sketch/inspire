@@ -104,6 +104,26 @@
         );
 
         const Dashboard = () => {
+            const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, post-job
+            const [jobs, setJobs] = useState([
+                { id: 1, title: 'Marketing Intern (Bilingual)', type: 'Remote', applicants: 35, status: 'Active' },
+                { id: 2, title: 'Junior Developer', type: 'Paris', applicants: 12, status: 'Active' }
+            ]);
+            const [newJob, setNewJob] = useState({ title: '', location: '', type: 'Internship', description: '' });
+
+            const handlePostJob = (e) => {
+                e.preventDefault();
+                const job = {
+                    id: Date.now(),
+                    ...newJob,
+                    applicants: 0,
+                    status: 'Active'
+                };
+                setJobs([...jobs, job]);
+                setActiveTab('dashboard');
+                setNewJob({ title: '', location: '', type: 'Internship', description: '' });
+            };
+
             return (
                 <div className="max-w-7xl mx-auto px-4 py-12">
                     <div className="flex justify-between items-end mb-12">
@@ -111,102 +131,174 @@
                             <h1 className="text-3xl font-bold text-white mb-2">Welcome Back, TechCorp</h1>
                             <p className="text-slate-400">Manage your recruitment pipeline and discover new talent.</p>
                         </div>
-                        <button className="bg-peach-accent text-white px-6 py-3 rounded font-bold uppercase tracking-wide hover:bg-white hover:text-navy-primary transition flex items-center gap-2">
-                            <Icon name="plus" size={18} /> Post New Position
+                        <button
+                            onClick={() => setActiveTab(activeTab === 'dashboard' ? 'post-job' : 'dashboard')}
+                            className={`${activeTab === 'dashboard' ? 'bg-peach-accent text-white' : 'bg-slate-700 text-slate-300'} px-6 py-3 rounded font-bold uppercase tracking-wide hover:bg-white hover:text-navy-primary transition flex items-center gap-2`}
+                        >
+                            {activeTab === 'dashboard' ? <><Icon name="plus" size={18} /> Post New Position</> : <><Icon name="arrowLeft" size={18} /> Back to Dashboard</>}
                         </button>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8 mb-16">
-                        {/* Stat Cards */}
-                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-peach-accent transition">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Jobs</p>
-                                    <h3 className="text-4xl font-bold text-white mt-2">4</h3>
-                                </div>
-                                <div className="p-2 bg-slate-700 rounded text-peach-accent"><Icon name="briefcase" /></div>
-                            </div>
-                            <div className="w-full bg-slate-700 h-1.5 rounded-full mt-2"><div className="bg-peach-accent h-1.5 rounded-full" style={{ width: '60%' }}></div></div>
-                        </div>
-                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-peach-accent transition">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Applicants</p>
-                                    <h3 className="text-4xl font-bold text-white mt-2">128</h3>
-                                </div>
-                                <div className="p-2 bg-slate-700 rounded text-blue-400"><Icon name="users" /></div>
-                            </div>
-                            <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><Icon name="trendingUp" size={12} /> +12% this week</p>
-                        </div>
-                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-peach-accent transition">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Interviews Scheduled</p>
-                                    <h3 className="text-4xl font-bold text-white mt-2">12</h3>
-                                </div>
-                                <div className="p-2 bg-slate-700 rounded text-purple-400"><Icon name="calendar" /></div>
-                            </div>
-                        </div>
-                    </div>
+                    {activeTab === 'dashboard' && (
+                        <div className="animate-fade-in">
 
-                    <div className="grid md:grid-cols-2 gap-12">
-                        {/* Recent Job Postings */}
-                        <div>
-                            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Icon name="list" size={20} className="text-peach-accent" /> Your Active Roles</h2>
-                            <div className="space-y-4">
-                                {[1, 2].map(i => (
-                                    <div key={i} className="bg-slate-800 p-5 rounded border border-slate-700 flex justify-between items-center hover:bg-slate-750 transition cursor-pointer">
+                            <div className="grid md:grid-cols-3 gap-8 mb-16">
+                                {/* Stat Cards */}
+                                <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-peach-accent transition">
+                                    <div className="flex justify-between items-start mb-4">
                                         <div>
-                                            <h4 className="font-bold text-white text-lg">Marketing Intern (Bilingual)</h4>
-                                            <p className="text-sm text-slate-400">Remote • 35 Applicants</p>
+                                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Jobs</p>
+                                            <h3 className="text-4xl font-bold text-white mt-2">4</h3>
                                         </div>
-                                        <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded text-xs font-bold uppercase">Active</span>
+                                        <div className="p-2 bg-slate-700 rounded text-peach-accent"><Icon name="briefcase" /></div>
                                     </div>
-                                ))}
-                                <div className="bg-slate-800 p-5 rounded border border-slate-700 flex justify-between items-center opacity-75">
-                                    <div>
-                                        <h4 className="font-bold text-white text-lg">Junior Developer</h4>
-                                        <p className="text-sm text-slate-400">Paris • Closed</p>
-                                    </div>
-                                    <span className="bg-slate-600 text-slate-300 px-3 py-1 rounded text-xs font-bold uppercase">Closed</span>
+                                    <div className="w-full bg-slate-700 h-1.5 rounded-full mt-2"><div className="bg-peach-accent h-1.5 rounded-full" style={{ width: '60%' }}></div></div>
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* Talent Pool Search */}
-                        <div>
-                            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Icon name="search" size={20} className="text-peach-accent" /> Search Talent Pool</h2>
-                            <div className="bg-slate-800 p-6 rounded border border-slate-700 mb-6">
-                                <div className="space-y-4">
-                                    <input type="text" placeholder="Skills (e.g. Python, SEO)" className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white focus:border-peach-accent focus:ring-1 focus:ring-peach-accent outline-none" />
-                                    <div className="flex gap-4">
-                                        <select className="w-1/2 bg-slate-900 border border-slate-600 rounded p-3 text-gray-300 outline-none">
-                                            <option>English Limit</option>
-                                            <option>Native</option>
-                                            <option>Fluent</option>
-                                        </select>
-                                        <select className="w-1/2 bg-slate-900 border border-slate-600 rounded p-3 text-gray-300 outline-none">
-                                            <option>French Level</option>
-                                            <option>Native</option>
-                                            <option>B2 (Professional)</option>
-                                        </select>
+                                <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-peach-accent transition">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Applicants</p>
+                                            <h3 className="text-4xl font-bold text-white mt-2">128</h3>
+                                        </div>
+                                        <div className="p-2 bg-slate-700 rounded text-blue-400"><Icon name="users" /></div>
                                     </div>
-                                    <button className="w-full bg-white text-navy-dark font-bold uppercase p-3 rounded hover:bg-peach-accent hover:text-white transition">Find Candidates</button>
+                                    <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><Icon name="trendingUp" size={12} /> +12% this week</p>
+                                </div>
+                                <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-peach-accent transition">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Interviews Scheduled</p>
+                                            <h3 className="text-4xl font-bold text-white mt-2">12</h3>
+                                        </div>
+                                        <div className="p-2 bg-slate-700 rounded text-purple-400"><Icon name="calendar" /></div>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Featured Candidate */}
-                            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 rounded border border-slate-700 flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-peach-accent flex items-center justify-center text-white font-bold">JD</div>
+                            <div className="grid md:grid-cols-2 gap-12">
+                                {/* Recent Job Postings */}
                                 <div>
-                                    <h4 className="font-bold text-white">Top Match: Jane Doe</h4>
-                                    <p className="text-xs text-slate-400">Marketing Major • Fluent En/Fr • Available Immediately</p>
+                                    <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Icon name="list" size={20} className="text-peach-accent" /> Your Active Roles</h2>
+                                    <div className="space-y-4">
+                                        {jobs.map(job => (
+                                            <div key={job.id} className="bg-slate-800 p-5 rounded border border-slate-700 flex justify-between items-center hover:bg-slate-750 transition cursor-pointer">
+                                                <div>
+                                                    <h4 className="font-bold text-white text-lg">{job.title}</h4>
+                                                    <p className="text-sm text-slate-400">{job.type} • {job.applicants} Applicants</p>
+                                                </div>
+                                                <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded text-xs font-bold uppercase">{job.status}</span>
+                                            </div>
+                                        ))}
+                                        <div className="bg-slate-800 p-5 rounded border border-slate-700 flex justify-between items-center opacity-75">
+                                            <div>
+                                                <h4 className="font-bold text-white text-lg">Junior Developer</h4>
+                                                <p className="text-sm text-slate-400">Paris • Closed</p>
+                                            </div>
+                                            <span className="bg-slate-600 text-slate-300 px-3 py-1 rounded text-xs font-bold uppercase">Closed</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button className="ml-auto text-peach-accent text-sm font-bold hover:text-white">View</button>
+
+                                {/* Talent Pool Search */}
+                                <div>
+                                    <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Icon name="search" size={20} className="text-peach-accent" /> Search Talent Pool</h2>
+                                    <div className="bg-slate-800 p-6 rounded border border-slate-700 mb-6">
+                                        <div className="space-y-4">
+                                            <input type="text" placeholder="Skills (e.g. Python, SEO)" className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white focus:border-peach-accent focus:ring-1 focus:ring-peach-accent outline-none" />
+                                            <div className="flex gap-4">
+                                                <select className="w-1/2 bg-slate-900 border border-slate-600 rounded p-3 text-gray-300 outline-none">
+                                                    <option>English Limit</option>
+                                                    <option>Native</option>
+                                                    <option>Fluent</option>
+                                                </select>
+                                                <select className="w-1/2 bg-slate-900 border border-slate-600 rounded p-3 text-gray-300 outline-none">
+                                                    <option>French Level</option>
+                                                    <option>Native</option>
+                                                    <option>B2 (Professional)</option>
+                                                </select>
+                                            </div>
+                                            <button className="w-full bg-white text-navy-dark font-bold uppercase p-3 rounded hover:bg-peach-accent hover:text-white transition">Find Candidates</button>
+                                        </div>
+                                    </div>
+
+                                    {/* Featured Candidate */}
+                                    <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 rounded border border-slate-700 flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-peach-accent flex items-center justify-center text-white font-bold">JD</div>
+                                        <div>
+                                            <h4 className="font-bold text-white">Top Match: Jane Doe</h4>
+                                            <p className="text-xs text-slate-400">Marketing Major • Fluent En/Fr • Available Immediately</p>
+                                        </div>
+                                        <button className="ml-auto text-peach-accent text-sm font-bold hover:text-white">View</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    )
+                    }
+
+                    {/* POST JOB FORM */}
+                    {
+                        activeTab === 'post-job' && (
+                            <div className="animate-fade-in max-w-2xl mx-auto bg-slate-800 p-8 rounded-lg border border-slate-700">
+                                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2"><Icon name="briefcase" className="text-peach-accent" /> Post a New Role</h2>
+                                <form onSubmit={handlePostJob} className="space-y-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Job Title</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="e.g. Marketing Assistant"
+                                            className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white focus:border-peach-accent outline-none"
+                                            value={newJob.title}
+                                            onChange={e => setNewJob({ ...newJob, title: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Location</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="e.g. Paris / Remote"
+                                                className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white focus:border-peach-accent outline-none"
+                                                value={newJob.location}
+                                                onChange={e => setNewJob({ ...newJob, location: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Job Type</label>
+                                            <select
+                                                className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white focus:border-peach-accent outline-none"
+                                                value={newJob.type}
+                                                onChange={e => setNewJob({ ...newJob, type: e.target.value })}
+                                            >
+                                                <option>Internship</option>
+                                                <option>Full Time</option>
+                                                <option>Part Time</option>
+                                                <option>Apprenticeship</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Description & Requirements</label>
+                                        <textarea
+                                            rows="4"
+                                            required
+                                            placeholder="Describe the role..."
+                                            className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white focus:border-peach-accent outline-none"
+                                            value={newJob.description}
+                                            onChange={e => setNewJob({ ...newJob, description: e.target.value })}
+                                        ></textarea>
+                                    </div>
+                                    <div className="flex justify-end gap-3 pt-4">
+                                        <button type="button" onClick={() => setActiveTab('dashboard')} className="px-6 py-2 text-slate-400 font-bold hover:text-white">Cancel</button>
+                                        <button type="submit" className="px-6 py-2 bg-peach-accent text-white font-bold rounded hover:bg-white hover:text-navy-primary transition">Publish Job</button>
+                                    </div>
+                                </form>
+                            </div>
+                        )
+                    }
+                </div >
             );
         };
 

@@ -183,6 +183,7 @@
                         {[
                             { id: 'intake', label: 'Student Profile' },
                             { id: 'jobs', label: 'Student Jobs' },
+                            { id: 'mentorship', label: 'Mentorship' },
                             { id: 'applications', label: 'My Applications' },
                             { id: 'documents', label: 'Document Vault' },
                             { id: 'housing', label: 'Find Housing' }
@@ -669,6 +670,58 @@
                                                     </div>
                                                 </div>
                                                 <button className="mt-3 w-full py-2 border border-navy-primary text-navy-primary text-xs font-bold uppercase rounded hover:bg-navy-primary hover:text-white transition">Request Visit</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 5. JOBS */}
+                        {activeTab === 'jobs' && (
+                            <div className="animate-fade-in max-w-5xl mx-auto">
+                                <h2 className="text-xl font-bold text-navy-primary mb-6 flex items-center gap-2"><Icon name="briefcase" /> Recommended Opportunities</h2>
+                                <div className="space-y-4">
+                                    {[
+                                        { title: 'Marketing Intern (Bilingual)', company: 'TechCorp', type: 'Remote', salary: '€1,200/mo' },
+                                        { title: 'English Tutor', company: 'Acadomia', type: 'Paris', salary: '€20/hr' },
+                                        { title: 'Event Assistant', company: 'Fashion Week', type: 'Paris', salary: '€14/hr' }
+                                    ].map((job, i) => (
+                                        <div key={i} className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:border-peach-accent transition flex justify-between items-center group cursor-pointer">
+                                            <div>
+                                                <h4 className="font-bold text-gray-800 text-lg group-hover:text-navy-primary transition">{job.title}</h4>
+                                                <p className="text-sm text-gray-500 font-bold">{job.company} • {job.type}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-peach-accent font-bold">{job.salary}</div>
+                                                <button className="text-xs font-bold text-gray-400 uppercase mt-1 px-3 py-1 border border-gray-200 rounded group-hover:bg-navy-primary group-hover:text-white transition">Apply</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 6. MENTORSHIP */}
+                        {activeTab === 'mentorship' && (
+                            <div className="animate-fade-in max-w-5xl mx-auto">
+                                <h2 className="text-xl font-bold text-navy-primary mb-6 flex items-center gap-2"><Icon name="users" /> Connect with Host Families</h2>
+                                <p className="text-gray-600 mb-8">Practice French and immerse yourself in the culture with verified local families.</p>
+
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {[
+                                        { name: 'The Dubois Family', location: 'Lyon', interest: 'Cooking & Arts', roles: 'Retired Art Teachers' },
+                                        { name: 'Sophie & Marc', location: 'Paris (11th)', interest: 'Hiking & Movies', roles: 'Young Professionals' }
+                                    ].map((family, i) => (
+                                        <div key={i} className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex gap-4 hover:shadow-md transition">
+                                            <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xl">
+                                                {family.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-800 text-lg">{family.name}</h4>
+                                                <p className="text-xs text-navy-primary font-bold uppercase mb-1">{family.location}</p>
+                                                <p className="text-sm text-gray-500 italic">"{family.roles} who love {family.interest}."</p>
+                                                <button className="mt-4 text-xs font-bold bg-purple-50 text-purple-700 px-4 py-2 rounded-full hover:bg-purple-600 hover:text-white transition">Request Connection</button>
                                             </div>
                                         </div>
                                     ))}
