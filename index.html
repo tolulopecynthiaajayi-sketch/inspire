@@ -132,11 +132,11 @@
                         </a>
                     </div>
                     <div className="flex gap-4 text-xs font-semibold uppercase tracking-wider">
-                        <a href="#" className="hover:text-peach-accent transition">Landlord Portal</a>
+                        <a href="landlord.html" className="hover:text-peach-accent transition">Landlord Portal</a>
                         <span>|</span>
-                        <a href="#" className="hover:text-peach-accent transition">Corporate Portal</a>
+                        <a href="corporate.html" className="hover:text-peach-accent transition">Corporate Portal</a>
                         <span>|</span>
-                        <a href="#" className="hover:text-peach-accent transition">Student Login</a>
+                        <a href="student.html" className="hover:text-peach-accent transition">Student Login</a>
                     </div>
                 </div>
             </div>
@@ -208,12 +208,12 @@
                         The complete ecosystem for international students and professionals in France. From university admission to your first apartment and career launch.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button className="bg-peach-accent text-navy-dark px-8 py-4 rounded font-bold uppercase tracking-wide shadow-lg transition transform hover:-translate-y-1 hover:bg-white hover:text-navy-primary">
+                        <a href="student.html" className="inline-block bg-peach-accent text-navy-dark px-8 py-4 rounded font-bold uppercase tracking-wide shadow-lg transition transform hover:-translate-y-1 hover:bg-white hover:text-navy-primary">
                             I'm a Student
-                        </button>
-                        <button className="bg-transparent border-2 border-white text-white px-8 py-4 rounded font-bold uppercase tracking-wide shadow-lg transition transform hover:-translate-y-1 hover:bg-white hover:text-navy-primary">
+                        </a>
+                        <a href="landlord.html" className="inline-block bg-transparent border-2 border-white text-white px-8 py-4 rounded font-bold uppercase tracking-wide shadow-lg transition transform hover:-translate-y-1 hover:bg-white hover:text-navy-primary">
                             I'm a Landlord
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -273,7 +273,7 @@
                                 <li className="flex gap-3"><Icon name="check" size={18} className="text-navy-primary" /> Document Review</li>
                                 <li className="flex gap-3"><Icon name="check" size={18} className="text-navy-primary" /> Visa Guidance</li>
                             </ul>
-                            <button className="w-full py-3 border-2 border-navy-primary text-navy-primary font-bold text-sm uppercase rounded hover:bg-navy-light transition">Choose Plan</button>
+                            <a href="student.html" className="block w-full text-center py-3 border-2 border-navy-primary text-navy-primary font-bold text-sm uppercase rounded hover:bg-navy-light transition">Choose Plan</a>
                         </div>
 
                         {/* Student Premium */}
@@ -286,7 +286,7 @@
                                 <li className="flex gap-3"><Icon name="check" size={18} className="text-peach-accent" /> <strong>Maison Alora:</strong> Housing Secured</li>
                                 <li className="flex gap-3"><Icon name="check" size={18} className="text-peach-accent" /> <strong>INSPIRE:</strong> Mentorship Guaranteed</li>
                             </ul>
-                            <button className="w-full py-3 bg-navy-primary text-white font-bold text-sm uppercase rounded hover:bg-navy-dark transition shadow-lg">Apply Now</button>
+                            <a href="student.html" className="block w-full text-center py-3 bg-navy-primary text-white font-bold text-sm uppercase rounded hover:bg-navy-dark transition shadow-lg">Apply Now</a>
                         </div>
 
                         {/* Corporate */}
@@ -298,7 +298,7 @@
                                 <li className="flex gap-3"><Icon name="check" size={18} className="text-navy-dark" /> Pre-Vetted Candidates</li>
                                 <li className="flex gap-3"><Icon name="check" size={18} className="text-navy-dark" /> Visa Handling Service</li>
                             </ul>
-                            <button className="w-full py-3 bg-navy-dark text-white font-bold text-sm uppercase rounded hover:bg-black transition">Contact Us</button>
+                            <a href="corporate.html" className="block w-full text-center py-3 bg-navy-dark text-white font-bold text-sm uppercase rounded hover:bg-black transition">Contact Us</a>
                         </div>
                     </div>
                 </div>
@@ -330,7 +330,7 @@
                                     Document Translation Services
                                 </li>
                             </ul>
-                            <button className="bg-navy-primary text-white px-8 py-3 rounded font-bold uppercase hover:bg-navy-dark transition shadow-md">Start Application</button>
+                            <a href="student.html" className="inline-block bg-navy-primary text-white px-8 py-3 rounded font-bold uppercase hover:bg-navy-dark transition shadow-md">Start Application</a>
                         </div>
                         <div className="md:w-1/2 grid grid-cols-2 gap-4">
                             <div className="bg-white p-6 rounded shadow-sm border border-gray-100 text-center hover:shadow-lg transition cursor-pointer hover:border-peach-accent group">
@@ -372,7 +372,7 @@
                             <p className="text-gray-600 mb-6 flex-grow">
                                 Secure your accommodation before you fly. We partner with CROUS and private residences to offer guaranteed housing with admin support.
                             </p>
-                            <button className="w-full bg-navy-primary text-white font-bold py-3 rounded hover:bg-navy-dark transition">Find My Home</button>
+                            <a href="student.html" className="block w-full text-center bg-navy-primary text-white font-bold py-3 rounded hover:bg-navy-dark transition">Find My Home</a>
                         </div>
 
                         {/* Landlord Side */}
@@ -383,7 +383,7 @@
                             <p className="text-slate-300 mb-6 flex-grow">
                                 List your property with Maison Alora to reach thousands of pre-vetted international students. We ensure reliable tenants.
                             </p>
-                            <button className="w-full bg-white text-navy-primary font-bold py-3 rounded hover:bg-gray-100 transition">List Your Property</button>
+                            <a href="landlord.html" className="block w-full text-center bg-white text-navy-primary font-bold py-3 rounded hover:bg-gray-100 transition">List Your Property</a>
                         </div>
                     </div>
                 </div>
@@ -405,9 +405,9 @@
                             </div>
                             <h3 className="text-xl font-bold mb-3 text-navy-primary">Mentorship</h3>
                             <p className="text-gray-600 text-sm mb-6">We pair you with local French families for cultural exchange.</p>
-                            <button className="text-white bg-peach-accent font-bold text-sm uppercase tracking-wide px-6 py-3 rounded shadow hover:bg-orange-700 transition w-full">
+                            <a href="mentorship.html" className="block w-full text-center text-white bg-peach-accent font-bold text-sm uppercase tracking-wide px-6 py-3 rounded shadow hover:bg-orange-700 transition w-full">
                                 I am a Host Family
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -425,7 +425,7 @@
                             <p className="text-slate-300 mb-8 text-lg">
                                 Stop sifting through resumes. Partner with Alora Talent to access a pre-screened pool of international students who are already integrated.
                             </p>
-                            <button className="bg-peach-accent text-navy-dark font-bold py-3 px-8 rounded hover:bg-white transition">Request Talent Access</button>
+                            <a href="corporate.html" className="inline-block bg-peach-accent text-navy-dark font-bold py-3 px-8 rounded hover:bg-white transition">Request Talent Access</a>
                         </div>
                         <div className="md:w-1/2 bg-white/5 p-8 rounded-lg border border-white/10 backdrop-blur-sm">
                             <h3 className="text-xl font-bold mb-6">Partner Inquiry</h3>

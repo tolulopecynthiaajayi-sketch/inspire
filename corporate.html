@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corporate Portal | Alora Talent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #0F172A;
+            color: #E2E8F0;
+        }
+
+        /* Dark Mode Base */
+        h1,
+        h2,
+        h3,
+        h4,
+        .nav-link {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .bg-navy-primary {
+            background-color: #1E3A8A;
+        }
+
+        .text-navy-primary {
+            color: #1E3A8A;
+        }
+
+        .bg-peach-accent {
+            background-color: #D9654C;
+        }
+
+        .text-peach-accent {
+            color: #D9654C;
+        }
+
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0F172A;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const iconName = name.charAt(0).toUpperCase() + name.slice(1);
+            if (!window.lucide || !window.lucide.icons || !window.lucide.icons[iconName]) return null;
+            const iconDef = window.lucide.icons[iconName];
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {iconDef.map((child, index) => React.createElement(child[0], { ...child[1], key: index }))}
+                </svg>
+            );
+        };
+
+        const NavBar = () => (
+            <nav className="bg-navy-primary shadow-lg border-b border-white/10 sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="flex justify-between h-20 items-center">
+                        <div className="flex items-center gap-3">
+                            <a href="index.html">
+                                <img src="logo.png" alt="Alora" className="h-10 w-auto object-contain filter invert mix-blend-screen opacity-90" />
+                            </a>
+                            <span className="font-bold text-white text-lg tracking-widest uppercase">Alora Talent</span>
+                        </div>
+                        <div className="flex items-center gap-6">
+                            <a href="#" className="text-sm font-semibold text-gray-300 hover:text-white transition">Dashboard</a>
+                            <a href="#" className="text-sm font-semibold text-gray-300 hover:text-white transition">Post a Job</a>
+                            <a href="#" className="text-sm font-semibold text-gray-300 hover:text-white transition">Candidates</a>
+                            <div className="w-8 h-8 rounded-full bg-peach-accent flex items-center justify-center text-white font-bold text-xs">TC</div>
+                            <a href="index.html" className="text-gray-300 hover:text-white" title="Back to Home"><Icon name="home" size={20} /></a>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        );
+
+        const Dashboard = () => {
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-12">
+                    <div className="flex justify-between items-end mb-12">
+                        <div>
+                            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back, TechCorp</h1>
+                            <p className="text-slate-400">Manage your recruitment pipeline and discover new talent.</p>
+                        </div>
+                        <button className="bg-peach-accent text-white px-6 py-3 rounded font-bold uppercase tracking-wide hover:bg-white hover:text-navy-primary transition flex items-center gap-2">
+                            <Icon name="plus" size={18} /> Post New Position
+                        </button>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8 mb-16">
+                        {/* Stat Cards */}
+                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-peach-accent transition">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Jobs</p>
+                                    <h3 className="text-4xl font-bold text-white mt-2">4</h3>
+                                </div>
+                                <div className="p-2 bg-slate-700 rounded text-peach-accent"><Icon name="briefcase" /></div>
+                            </div>
+                            <div className="w-full bg-slate-700 h-1.5 rounded-full mt-2"><div className="bg-peach-accent h-1.5 rounded-full" style={{ width: '60%' }}></div></div>
+                        </div>
+                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-peach-accent transition">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Applicants</p>
+                                    <h3 className="text-4xl font-bold text-white mt-2">128</h3>
+                                </div>
+                                <div className="p-2 bg-slate-700 rounded text-blue-400"><Icon name="users" /></div>
+                            </div>
+                            <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><Icon name="trendingUp" size={12} /> +12% this week</p>
+                        </div>
+                        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-peach-accent transition">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Interviews Scheduled</p>
+                                    <h3 className="text-4xl font-bold text-white mt-2">12</h3>
+                                </div>
+                                <div className="p-2 bg-slate-700 rounded text-purple-400"><Icon name="calendar" /></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-12">
+                        {/* Recent Job Postings */}
+                        <div>
+                            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Icon name="list" size={20} className="text-peach-accent" /> Your Active Roles</h2>
+                            <div className="space-y-4">
+                                {[1, 2].map(i => (
+                                    <div key={i} className="bg-slate-800 p-5 rounded border border-slate-700 flex justify-between items-center hover:bg-slate-750 transition cursor-pointer">
+                                        <div>
+                                            <h4 className="font-bold text-white text-lg">Marketing Intern (Bilingual)</h4>
+                                            <p className="text-sm text-slate-400">Remote • 35 Applicants</p>
+                                        </div>
+                                        <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded text-xs font-bold uppercase">Active</span>
+                                    </div>
+                                ))}
+                                <div className="bg-slate-800 p-5 rounded border border-slate-700 flex justify-between items-center opacity-75">
+                                    <div>
+                                        <h4 className="font-bold text-white text-lg">Junior Developer</h4>
+                                        <p className="text-sm text-slate-400">Paris • Closed</p>
+                                    </div>
+                                    <span className="bg-slate-600 text-slate-300 px-3 py-1 rounded text-xs font-bold uppercase">Closed</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Talent Pool Search */}
+                        <div>
+                            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Icon name="search" size={20} className="text-peach-accent" /> Search Talent Pool</h2>
+                            <div className="bg-slate-800 p-6 rounded border border-slate-700 mb-6">
+                                <div className="space-y-4">
+                                    <input type="text" placeholder="Skills (e.g. Python, SEO)" className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-white focus:border-peach-accent focus:ring-1 focus:ring-peach-accent outline-none" />
+                                    <div className="flex gap-4">
+                                        <select className="w-1/2 bg-slate-900 border border-slate-600 rounded p-3 text-gray-300 outline-none">
+                                            <option>English Level</option>
+                                            <option>Native</option>
+                                            <option>C2 (Proficient)</option>
+                                            <option>C1 (Advanced)</option>
+                                            <option>B2 (Upper Intermediate)</option>
+                                            <option>B1 (Intermediate)</option>
+                                            <option>A2 (Elementary)</option>
+                                            <option>A1 (Beginner)</option>
+                                        </select>
+                                        <select className="w-1/2 bg-slate-900 border border-slate-600 rounded p-3 text-gray-300 outline-none">
+                                            <option>French Level</option>
+                                            <option>Native</option>
+                                            <option>C2 (Proficient)</option>
+                                            <option>C1 (Advanced)</option>
+                                            <option>B2 (Upper Intermediate)</option>
+                                            <option>B1 (Intermediate)</option>
+                                            <option>A2 (Elementary)</option>
+                                            <option>A1 (Beginner)</option>
+                                        </select>
+                                    </div>
+                                    <button className="w-full bg-white text-navy-dark font-bold uppercase p-3 rounded hover:bg-peach-accent hover:text-white transition">Find Candidates</button>
+                                </div>
+                            </div>
+
+                            {/* Featured Candidate */}
+                            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 rounded border border-slate-700 flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-peach-accent flex items-center justify-center text-white font-bold">JD</div>
+                                <div>
+                                    <h4 className="font-bold text-white">Top Match: Jane Doe</h4>
+                                    <p className="text-xs text-slate-400">Marketing Major • Fluent En/Fr • Available Immediately</p>
+                                </div>
+                                <button className="ml-auto text-peach-accent text-sm font-bold hover:text-white">View</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => (
+            <div>
+                <NavBar />
+                <Dashboard />
+            </div>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
