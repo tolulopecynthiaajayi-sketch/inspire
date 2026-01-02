@@ -113,13 +113,17 @@
                 setTimeout(() => {
                     setIsLoading(false);
                     // Redirect based on role
-                    switch (role) {
-                        case 'student': window.location.href = 'student.html'; break;
-                        case 'landlord': window.location.href = 'landlord.html'; break;
-                        case 'corporate': window.location.href = 'corporate.html'; break;
-                        case 'family': window.location.href = 'mentorship.html'; break;
-                        case 'admin': window.location.href = 'admin.html'; break;
-                        default: window.location.href = 'index.html';
+                    if (role === 'admin') {
+                        sessionStorage.setItem('isAdmin', 'true');
+                        window.location.href = 'admin.html';
+                    } else {
+                        switch (role) {
+                            case 'student': window.location.href = 'student.html'; break;
+                            case 'landlord': window.location.href = 'landlord.html'; break;
+                            case 'corporate': window.location.href = 'corporate.html'; break;
+                            case 'family': window.location.href = 'mentorship.html'; break;
+                            default: window.location.href = 'index.html';
+                        }
                     }
                 }, 1500);
             };
