@@ -368,43 +368,59 @@
             try {
                 let userCredential;
                 if (isLogin) {
-                    // Compat SDK uses global firebase.auth method
+                    // 1. Log In
                     userCredential = await window.auth.signInWithEmailAndPassword(email, password);
 
                     // Email Verification Check
                     if (!userCredential.user.emailVerified) {
-                        alert("Please verify your email address to log in.\n\nCheck your inbox for the verification link.");
-                        await window.auth.signOut();
-                        return;
+                        alert("Please verify your email address to log in.\n\nPlease check your inbox for the verification link.");
+                        await window.auth.signOut(); // Prevent access
+                        return; // Stop execution
+                    }
+
+                    // 2. Fetch User Role from Firestore (Persistence)
+                    try {
+                        const userDoc = await window.db.collection('users').doc(userCredential.user.uid).get();
+                        if (userDoc.exists) {
+                            const userData = userDoc.data();
+                            console.log("User Profile Loaded:", userData);
+                            if (userData.role) {
+                                currentRole = userData.role; // Override local selection with source of truth
+                            }
+                        }
+                    } catch (storeErr) {
+                        console.warn("Could not fetch user profile:", storeErr);
+                        // Continue anyway, maybe they are an old user without a profile doc
                     }
 
                 } else {
-                    // Compat SDK uses global firebase.auth method
+                    // 1. Sign Up
                     userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
 
-                    // Send Verification Email
-                    await userCredential.user.sendEmailVerification();
-                    alert(`Account created! A verification email has been sent to ${email}.\n\nPlease check your inbox and click the link to verify your account before logging in.`);
+                    // 2. Save User Profile
+                    await window.db.collection('users').doc(userCredential.user.uid).set({
+                        email: email,
+                        role: currentRole,
+                        createdAt: new Date(),
+                        name: document.getElementById('fullname').value || 'New User'
+                    });
 
-                    await window.auth.signOut();
-                    toggleMode();
+                    // 3. Send Verification Email
+                    await userCredential.user.sendEmailVerification();
+
+                    // 4. Redirect to Welcome Page (Process Verify)
+                    window.location.href = 'welcome.html';
                     return;
                 }
 
                 console.log("Success:", userCredential.user);
 
-                // Redirect
+                // Redirect Logic
                 if (currentRole === 'admin') {
                     sessionStorage.setItem('isAdmin', 'true');
                     window.location.href = 'admin.html';
                 } else {
-                    switch (currentRole) {
-                        case 'student': window.location.href = 'student.html'; break;
-                        case 'landlord': window.location.href = 'landlord.html'; break;
-                        case 'corporate': window.location.href = 'corporate.html'; break;
-                        case 'family': window.location.href = 'mentorship.html'; break;
-                        default: window.location.href = 'index.html';
-                    }
+                    redirectToDashboard(currentRole);
                 }
 
             } catch (err) {
@@ -421,31 +437,42 @@
             errorMsg.classList.add('hidden-op');
 
             // System Check
-            if (!window.isFirebaseReady) {
-                return;
-            }
-
-            // Admin Check
-            // Admin Security Check
-            if (currentRole === 'admin') {
-                alert(`ACCESS DENIED: Google Sign-In is not supported for Administrators. Please use your master password.`);
-                return;
-            }
+            if (!window.isFirebaseReady) { return; }
 
             setLoading(true);
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
                 const result = await window.auth.signInWithPopup(provider);
-                console.log("Google Login Success:", result.user);
+                const user = result.user;
 
-                // Redirect based on role
-                switch (currentRole) {
-                    case 'student': window.location.href = 'student.html'; break;
-                    case 'landlord': window.location.href = 'landlord.html'; break;
-                    case 'corporate': window.location.href = 'corporate.html'; break;
-                    case 'family': window.location.href = 'mentorship.html'; break;
-                    default: window.location.href = 'index.html';
+                // Check if user exists in Firestore
+                const userDoc = await window.db.collection('users').doc(user.uid).get();
+
+                if (userDoc.exists) {
+                    // Existing User: Use stored role
+                    const userData = userDoc.data();
+                    if (userData.role) {
+                        currentRole = userData.role;
+                        alert(`Welcome back, ${user.displayName}! Logging you in as ${currentRole}...`);
+                    }
+                    // Existing users go straight to dashboard (or welcome if we want to be nice, but dashboard is better for returning)
+                    redirectToDashboard(currentRole);
+
+                } else {
+                    // New User: Create profile
+                    await window.db.collection('users').doc(user.uid).set({
+                        email: user.email,
+                        role: currentRole,
+                        createdAt: new Date(),
+                        name: user.displayName,
+                        photoURL: user.photoURL
+                    });
+
+                    // New Google Users go to Welcome Page
+                    window.location.href = 'welcome.html';
                 }
+
+                console.log("Google Login Success:", user);
 
             } catch (err) {
                 console.error(err);
@@ -455,6 +482,16 @@
                 setLoading(false);
             }
         });
+
+        function redirectToDashboard(role) {
+            switch (role) {
+                case 'student': window.location.href = 'student.html'; break;
+                case 'landlord': window.location.href = 'landlord.html'; break;
+                case 'corporate': window.location.href = 'corporate.html'; break;
+                case 'family': window.location.href = 'mentorship.html'; break;
+                default: window.location.href = 'index.html';
+            }
+        }
 
         function setLoading(loading) {
             isLoading = loading;
