@@ -142,4 +142,6 @@
 
 ## 6. Security & Compliance
 - **Data Protection:** Compliance with GDPR (General Data Protection Regulation) as the platform operates in France/EU.
-- **Encryption:** SSL/TLS encryption for all data in transit, particularly for sensitive student identity documents.
+- **Encryption:** SSL/TLS encryption for all data in transit, particularly for sensitive student identity documents. 
+
+ftdd
