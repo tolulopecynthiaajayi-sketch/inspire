@@ -6,11 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alora Group - Unified Login</title>
 
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -60,6 +55,11 @@
             border-color: #D9654C;
         }
 
+        /* Utility for hiding/showing elements */
+        .hidden-op {
+            display: none !important;
+        }
+
         .animate-fade-in {
             animation: fadeIn 0.5s ease-out;
         }
@@ -80,213 +80,342 @@
 
 <body class="bg-gray-50 h-screen flex">
 
-    <div id="root" class="w-full h-full"></div>
-
-    <script type="text/babel" data-type="module">
+    <!-- 1. Firebase Imports (Module) -->
+    <script type="module">
         import { auth } from './js/firebaseConfig.js';
         import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        const { useState, useEffect } = React;
+        // Expose to window for the main script
+        window.auth = auth;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.isFirebaseReady = true; // Flag for our script to check
 
-        const Icon = ({ name, size = 24, className }) => {
-            useEffect(() => {
-                lucide.createIcons();
-            }, [name]);
-            return <i data-lucide={name} width={size} height={size} className={className}></i>;
-        };
+        // Dispatch event to notify our script
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
 
-        const LoginPortal = () => {
-            const [role, setRole] = useState('student'); // student, landlord, corporate, family, admin
-            const [isLogin, setIsLogin] = useState(true);
-            const [isLoading, setIsLoading] = useState(false);
-            const [password, setPassword] = useState('');
+    <div class="flex w-full h-full">
+        <!-- Left Side - Brand Visual -->
+        <!-- We use ID 'brand-panel' to change bg color dynamically -->
+        <div id="brand-panel"
+            class="hidden lg:flex w-1/2 bg-navy-primary text-white flex-col justify-center items-center relative overflow-hidden transition-colors duration-500">
+            <div class="absolute inset-0 bg-black/20"></div>
+            <div class="relative z-10 text-center px-12">
+                <img src="logo.png" alt="Alora Logo"
+                    class="h-24 w-auto mx-auto mb-8 filter invert opacity-90 mix-blend-screen" />
+                <h1 class="text-4xl font-bold mb-4">Welcome to Alora Group</h1>
+                <p class="text-lg opacity-80 max-w-md mx-auto">
+                    The all-in-one ecosystem for international education, housing, career, and integration.
+                </p>
+            </div>
+            <!-- Abstract Shapes -->
+            <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+            <div class="absolute top-12 right-12 w-32 h-32 bg-peach-accent/20 rounded-full blur-2xl"></div>
+        </div>
 
-            const handleAuth = async (e) => {
-                e.preventDefault();
+        <!-- Right Side - Login Form -->
+        <div class="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 bg-white relative">
+            <a href="index.html"
+                class="absolute top-8 left-8 text-gray-400 hover:text-navy-primary flex items-center gap-2 transition text-sm font-bold">
+                <i data-lucide="arrow-left" width="16" height="16"></i> Back to Home
+            </a>
 
-                // Security Check for Admin
-                const validPassword = localStorage.getItem('adminPassword') || 'admin123';
-                if (role === 'admin' && password !== validPassword) {
-                    alert('ACCESS DENIED: Restricted to Administrators only.\nHint: Try "' + validPassword + '"');
-                    return;
-                }
+            <div class="w-full max-w-md">
+                <!-- Role Switcher -->
+                <div class="mb-8 overflow-x-auto pb-2">
+                    <div class="flex gap-2" id="role-container">
+                        <!-- Roles injected by JS -->
+                    </div>
+                </div>
 
-                setIsLoading(true);
+                <div class="text-center mb-8 animate-fade-in">
+                    <div id="role-icon-container"
+                        class="w-16 h-16 rounded-full bg-navy-primary text-white flex items-center justify-center mx-auto mb-4 shadow-lg transition-colors duration-300">
+                        <i id="role-icon" data-lucide="graduation-cap" width="32" height="32"></i>
+                    </div>
+                    <h2 id="form-title" class="text-2xl font-bold text-gray-900">Log in as Student</h2>
+                    <p id="form-subtitle" class="text-gray-500 text-sm mt-1">Access your dedicated student dashboard.
+                    </p>
 
-                try {
-                    const email = e.target.querySelector('input[type="email"]').value;
-                    let userCredential;
+                    <div id="admin-warning"
+                        class="hidden-op mt-4 bg-red-100 border border-red-200 text-red-700 px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 justify-center animate-pulse">
+                        <i data-lucide="lock" width="14" height="14"></i> Authorized Personnel Only
+                    </div>
+                </div>
 
-                    if (isLogin) {
-                        // SIGN IN
-                        userCredential = await signInWithEmailAndPassword(auth, email, password);
-                    } else {
-                        // SIGN UP
-                        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    }
-
-                    const user = userCredential.user;
-                    console.log("Logged in:", user);
-
-                    // Redirect based on role
-                    if (role === 'admin') {
-                        sessionStorage.setItem('isAdmin', 'true');
-                        window.location.href = 'admin.html';
-                    } else {
-                        switch (role) {
-                            case 'student': window.location.href = 'student.html'; break;
-                            case 'landlord': window.location.href = 'landlord.html'; break;
-                            case 'corporate': window.location.href = 'corporate.html'; break;
-                            case 'family': window.location.href = 'mentorship.html'; break;
-                            default: window.location.href = 'index.html';
-                        }
-                    }
-
-                } catch (err) {
-                    console.error("Auth Error:", err);
-                    alert('Authentication Failed: ' + err.message);
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-
-            const roles = [
-                { id: 'student', label: 'Student', icon: 'graduationCap', color: 'bg-navy-primary' },
-                { id: 'landlord', label: 'Landlord', icon: 'home', color: 'bg-peach-accent' },
-                { id: 'family', label: 'Host Family', icon: 'heart', color: 'bg-purple-600' },
-                { id: 'corporate', label: 'Corporate', icon: 'briefcase', color: 'bg-slate-800' },
-                { id: 'admin', label: 'Admin', icon: 'shield', color: 'bg-red-700' },
-            ];
-
-            const activeRole = roles.find(r => r.id === role);
-
-            return (
-                <div className="flex w-full h-full">
-                    {/* Left Side - Brand Visual */}
-                    <div className={`hidden lg:flex w-1/2 ${activeRole.color} text-white flex-col justify-center items-center relative overflow-hidden transition-colors duration-500`}>
-                        <div className="absolute inset-0 bg-black/20"></div>
-                        <div className="relative z-10 text-center px-12">
-                            <img src="logo.png" alt="Alora Logo" className="h-24 w-auto mx-auto mb-8 filter invert opacity-90 mix-blend-screen" />
-                            <h1 className="text-4xl font-bold mb-4">Welcome to Alora Group</h1>
-                            <p className="text-lg opacity-80 max-w-md mx-auto">
-                                The all-in-one ecosystem for international education, housing, career, and integration.
-                            </p>
+                <form id="auth-form" class="space-y-4 animate-fade-in">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Email Address</label>
+                        <div class="relative">
+                            <div
+                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i data-lucide="mail" width="16" height="16"></i>
+                            </div>
+                            <input type="email" id="email" placeholder="you@example.com"
+                                class="w-full pl-10 p-3 border rounded bg-gray-50 border-gray-200 focus:border-navy-primary outline-none transition"
+                                required />
                         </div>
-                        {/* Abstract Shapes */}
-                        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-                        <div className="absolute top-12 right-12 w-32 h-32 bg-peach-accent/20 rounded-full blur-2xl"></div>
                     </div>
 
-                    {/* Right Side - Login Form */}
-                    <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 bg-white relative">
-                        <a href="index.html" className="absolute top-8 left-8 text-gray-400 hover:text-navy-primary flex items-center gap-2 transition text-sm font-bold">
-                            <Icon name="arrowLeft" size={16} /> Back to Home
-                        </a>
-
-                        <div className="w-full max-w-md">
-                            {/* Role Switcher */}
-                            <div className="mb-8 overflow-x-auto pb-2">
-                                <div className="flex gap-2">
-                                    {roles.map(r => (
-                                        <button
-                                            key={r.id}
-                                            onClick={() => setRole(r.id)}
-                                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition ${role === r.id ? `${activeRole.color} text-white shadow-md` : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                                        >
-                                            <Icon name={r.icon} size={14} /> {r.label}
-                                        </button>
-                                    ))}
-                                </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Password</label>
+                        <div class="relative">
+                            <div
+                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i data-lucide="lock" width="16" height="16"></i>
                             </div>
-
-                            <div className="text-center mb-8 animate-fade-in">
-                                <div className={`w-16 h-16 rounded-full ${activeRole.color} text-white flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-                                    <Icon name={activeRole.icon} size={32} />
-                                </div>
-                                <h2 className="text-2xl font-bold text-gray-900">{isLogin ? `Log in as ${activeRole.label}` : `Join as ${activeRole.label}`}</h2>
-                                <p className="text-gray-500 text-sm mt-1">Access your dedicated {activeRole.label.toLowerCase()} dashboard.</p>
-
-                                {role === 'admin' && (
-                                    <div className="mt-4 bg-red-100 border border-red-200 text-red-700 px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 justify-center animate-pulse">
-                                        <Icon name="lock" size={14} /> Authorized Personnel Only
-                                    </div>
-                                )}
-                            </div>
-
-                            <form onSubmit={handleAuth} className="space-y-4 animate-fade-in">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Email Address</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                            <Icon name="mail" size={16} />
-                                        </div>
-                                        <input type="email" placeholder="you@example.com" className="w-full pl-10 p-3 border rounded bg-gray-50 border-gray-200 focus:border-navy-primary outline-none transition" required />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Password</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                            <Icon name="lock" size={16} />
-                                        </div>
-                                        <input
-                                            type="password"
-                                            placeholder="••••••••"
-                                            className="w-full pl-10 p-3 border rounded bg-gray-50 border-gray-200 focus:border-navy-primary outline-none transition"
-                                            required
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-
-                                {!isLogin && (
-                                    <div className="animate-fade-in">
-                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Full Name</label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                                <Icon name="user" size={16} />
-                                            </div>
-                                            <input type="text" placeholder="John Doe" className="w-full pl-10 p-3 border rounded bg-gray-50 border-gray-200 focus:border-navy-primary outline-none transition" />
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex items-center justify-between text-xs">
-                                    <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
-                                        <input type="checkbox" className="rounded text-navy-primary focus:ring-navy-primary" />
-                                        Remember me
-                                    </label>
-                                    {isLogin && <a href="#" className="text-navy-primary font-bold hover:underline">Forgot password?</a>}
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className={`w-full py-3 rounded text-white font-bold uppercase tracking-wide transition shadow-md flex justify-center items-center gap-2 ${activeRole.color} hover:opacity-90 disabled:opacity-50`}
-                                >
-                                    {isLoading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
-                                    {!isLoading && <Icon name="arrowRight" size={16} />}
-                                </button>
-                            </form>
-
-                            <div className="mt-6 text-center text-sm text-gray-500">
-                                {isLogin ? "Don't have an account? " : "Already have an account? "}
-                                <button onClick={() => setIsLogin(!isLogin)} className="text-navy-primary font-bold hover:underline">
-                                    {isLogin ? 'Sign Up' : 'Log In'}
-                                </button>
-                            </div>
-
+                            <input type="password" id="password" placeholder="••••••••"
+                                class="w-full pl-10 p-3 border rounded bg-gray-50 border-gray-200 focus:border-navy-primary outline-none transition"
+                                required />
                         </div>
-                    </div >
-                </div >
-            );
-        };
+                    </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<LoginPortal />);
+                    <div id="fullname-field" class="hidden-op animate-fade-in">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Full Name</label>
+                        <div class="relative">
+                            <div
+                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i data-lucide="user" width="16" height="16"></i>
+                            </div>
+                            <input type="text" id="fullname" placeholder="John Doe"
+                                class="w-full pl-10 p-3 border rounded bg-gray-50 border-gray-200 focus:border-navy-primary outline-none transition" />
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="flex items-center gap-2 text-gray-600 cursor-pointer">
+                            <input type="checkbox" class="rounded text-navy-primary focus:ring-navy-primary" />
+                            Remember me
+                        </label>
+                        <a href="#" id="forgot-password" class="text-navy-primary font-bold hover:underline">Forgot
+                            password?</a>
+                    </div>
+
+                    <button type="submit" id="submit-btn"
+                        class="w-full py-3 rounded text-white font-bold uppercase tracking-wide transition shadow-md flex justify-center items-center gap-2 bg-navy-primary hover:opacity-90 disabled:opacity-50 cursor-pointer">
+                        <span id="btn-text">Sign In</span>
+                        <i id="btn-icon" data-lucide="arrow-right" width="16" height="16"></i>
+                    </button>
+                    <div id="error-msg" class="text-red-500 text-xs text-center mt-2 hidden-op"></div>
+                </form>
+
+                <div class="mt-6 text-center text-sm text-gray-500">
+                    <span id="switch-text">Don't have an account? </span>
+                    <button id="switch-mode-btn" class="text-navy-primary font-bold hover:underline">
+                        Sign Up
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Logic Script (Vanilla JS) -->
+    <script>
+        // State
+        let currentRole = 'student';
+        let isLogin = true;
+        let isLoading = false;
+
+        // Role Configuration
+        const roles = [
+            { id: 'student', label: 'Student', icon: 'graduation-cap', color: 'bg-navy-primary' },
+            { id: 'landlord', label: 'Landlord', icon: 'home', color: 'bg-peach-accent' },
+            { id: 'family', label: 'Host Family', icon: 'heart', color: 'bg-purple-600' },
+            { id: 'corporate', label: 'Corporate', icon: 'briefcase', color: 'bg-slate-800' },
+            { id: 'admin', label: 'Admin', icon: 'shield', color: 'bg-red-700' },
+        ];
+
+        // DOM Elements
+        const roleContainer = document.getElementById('role-container');
+        const brandPanel = document.getElementById('brand-panel');
+        const roleIconContainer = document.getElementById('role-icon-container');
+        const roleIcon = document.getElementById('role-icon');
+        const formTitle = document.getElementById('form-title');
+        const formSubtitle = document.getElementById('form-subtitle');
+        const adminWarning = document.getElementById('admin-warning');
+        const fullnameField = document.getElementById('fullname-field');
+        const forgotPasswordLink = document.getElementById('forgot-password');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnIcon = document.getElementById('btn-icon');
+        const switchText = document.getElementById('switch-text');
+        const switchModeBtn = document.getElementById('switch-mode-btn');
+        const errorMsg = document.getElementById('error-msg');
+        const inputs = document.querySelectorAll('input');
+
+        // Initialization
+        function init() {
+            lucide.createIcons();
+            renderRoleButtons();
+            updateUI();
+        }
+
+        // Render Role Buttons
+        function renderRoleButtons() {
+            roleContainer.innerHTML = '';
+            roles.forEach(role => {
+                const btn = document.createElement('button');
+                btn.className = `flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition ${currentRole === role.id ? `${role.color} text-white shadow-md` : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`;
+                btn.innerHTML = `<i data-lucide="${role.icon}" width="14" height="14"></i> ${role.label}`;
+                btn.onclick = () => setRole(role.id);
+                roleContainer.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        // Actions
+        function setRole(roleId) {
+            currentRole = roleId;
+            renderRoleButtons(); // Re-render to update active state
+            updateUI();
+        }
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            updateUI();
+        }
+
+        function updateUI() {
+            const activeRole = roles.find(r => r.id === currentRole);
+
+            // Colors
+            brandPanel.className = `hidden lg:flex w-1/2 ${activeRole.color} text-white flex-col justify-center items-center relative overflow-hidden transition-colors duration-500`;
+            roleIconContainer.className = `w-16 h-16 rounded-full ${activeRole.color} text-white flex items-center justify-center mx-auto mb-4 shadow-lg transition-colors duration-300`;
+            submitBtn.className = `w-full py-3 rounded text-white font-bold uppercase tracking-wide transition shadow-md flex justify-center items-center gap-2 ${activeRole.color} hover:opacity-90 disabled:opacity-50 cursor-pointer`;
+
+            // Icons
+            roleIcon.setAttribute('data-lucide', activeRole.icon);
+            lucide.createIcons();
+
+            // Text
+            formTitle.textContent = isLogin ? `Log in as ${activeRole.label}` : `Join as ${activeRole.label}`;
+            formSubtitle.textContent = `Access your dedicated ${activeRole.label.toLowerCase()} dashboard.`;
+
+            // Admin Logic
+            if (currentRole === 'admin') {
+                adminWarning.classList.remove('hidden-op');
+            } else {
+                adminWarning.classList.add('hidden-op');
+            }
+
+            // toggle Fields
+            if (isLogin) {
+                fullnameField.classList.add('hidden-op');
+                forgotPasswordLink.classList.remove('hidden-op');
+                btnText.textContent = "Sign In";
+                switchText.textContent = "Don't have an account? ";
+                switchModeBtn.textContent = "Sign Up";
+            } else {
+                fullnameField.classList.remove('hidden-op'); // Show name on signup
+                forgotPasswordLink.classList.add('hidden-op');
+                btnText.textContent = "Create Account";
+                switchText.textContent = "Already have an account? ";
+                switchModeBtn.textContent = "Log In";
+            }
+        }
+
+        // Listeners
+        switchModeBtn.addEventListener('click', toggleMode);
+
+        // Listen for Firebase Ready Event (from the module script above)
+        window.addEventListener('firebase-ready', () => {
+            console.log("Firebase is ready!");
+            // If we were waiting, update logic here.
+            // We can also just check window.isFirebaseReady for synchronous checks elsewhere.
+            updateConnectStatus(true);
+        });
+
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.classList.add('hidden-op');
+
+            // Redundant check, but safe
+            if (!window.isFirebaseReady) {
+                return;
+            }
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Admin Security Check
+            const validPassword = localStorage.getItem('adminPassword') || 'admin123';
+            if (currentRole === 'admin' && password !== validPassword) {
+                alert(`ACCESS DENIED: Restricted to Administrators only.\nHint: Try "${validPassword}"`);
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                let userCredential;
+                if (isLogin) {
+                    userCredential = await window.signInWithEmailAndPassword(window.auth, email, password);
+                } else {
+                    userCredential = await window.createUserWithEmailAndPassword(window.auth, email, password);
+                }
+
+                console.log("Success:", userCredential.user);
+
+                // Redirect
+                if (currentRole === 'admin') {
+                    sessionStorage.setItem('isAdmin', 'true');
+                    window.location.href = 'admin.html';
+                } else {
+                    switch (currentRole) {
+                        case 'student': window.location.href = 'student.html'; break;
+                        case 'landlord': window.location.href = 'landlord.html'; break;
+                        case 'corporate': window.location.href = 'corporate.html'; break;
+                        case 'family': window.location.href = 'mentorship.html'; break;
+                        default: window.location.href = 'index.html';
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                errorMsg.textContent = err.message.replace("Firebase: ", "");
+                errorMsg.classList.remove('hidden-op');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function setLoading(loading) {
+            isLoading = loading;
+            submitBtn.disabled = loading;
+            if (loading) {
+                btnText.textContent = "Processing...";
+                btnIcon.classList.add('hidden-op');
+            } else {
+                btnText.textContent = isLogin ? "Sign In" : "Create Account";
+                btnIcon.classList.remove('hidden-op');
+            }
+        }
+
+        function updateConnectStatus(ready) {
+            if (ready) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnText.textContent = isLogin ? "Sign In" : "Create Account";
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                btnText.textContent = "Connecting...";
+            }
+        }
+
+        // Init
+        init();
+
+        // Check if ready already (in case script loaded super fast)
+        if (window.isFirebaseReady) {
+            updateConnectStatus(true);
+        } else {
+            updateConnectStatus(false);
+        }
     </script>
+
 </body>
 
 </html>
