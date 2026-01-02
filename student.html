@@ -121,6 +121,7 @@
                     <div className="flex overflow-x-auto gap-2 border-b border-gray-200 mb-8">
                         {[
                             { id: 'intake', label: 'Student Profile' },
+                            { id: 'jobs', label: 'Student Jobs' },
                             { id: 'applications', label: 'My Applications' },
                             { id: 'documents', label: 'Document Vault' },
                             { id: 'housing', label: 'Find Housing' }
@@ -187,10 +188,80 @@
                                             </div>
                                         </div>
 
+                                        <div className="pt-4">
+                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">5</div> Personal Statement</h3>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Background Narrative</label>
+                                            <p className="text-xs text-gray-400 mb-2">Tell us about your background, interests, and goals. This helps us match you for jobs, housing, and mentorship.</p>
+                                            <textarea className="w-full p-4 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none h-32" placeholder="I am a..."></textarea>
+                                        </div>
+
                                         <div className="pt-4 flex justify-end">
                                             <button className="bg-navy-primary text-white font-bold py-3 px-8 rounded shadow-lg hover:bg-navy-dark transition uppercase tracking-wide">Save Profile</button>
                                         </div>
                                     </form>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* STUDENT JOBS (New Tab) */}
+                        {/* STUDENT JOBS (Corporate AI Matching) */}
+                        {activeTab === 'jobs' && (
+                            <div className="animate-fade-in max-w-5xl mx-auto">
+                                <div className="flex flex-col md:flex-row justify-between items-end mb-8 border-b border-gray-100 pb-4">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-navy-primary mb-2">Corporate Career Matching</h2>
+                                        <p className="text-gray-500 text-sm">Our AI connects you with internships & jobs from our <span className="font-bold text-navy-primary">Alora Talent Partners</span>.</p>
+                                    </div>
+                                    <div className="bg-blue-50 text-blue-800 px-4 py-2 rounded text-xs font-bold flex items-center gap-2">
+                                        <Icon name="sparkles" size={16} /> AI Status: Scanning Partner Roles...
+                                    </div>
+                                </div>
+
+                                {/* AI Match Results */}
+                                <div className="space-y-6">
+                                    {[
+                                        { title: 'Marketing Intern (Bilingual)', company: 'L\'Oréal Group', location: 'Paris (Remote Hybrid)', match: 98, tags: ['English Native', 'Social Media', 'Marketing'] },
+                                        { title: 'Junior Data Analyst', company: 'TechCorp France', location: 'Lyon', match: 92, tags: ['Data Analysis', 'English B2', 'Excel'] },
+                                        { title: 'Business Developer', company: 'BlaBlaCar', location: 'Paris', match: 85, tags: ['Sales', 'Communication', 'French B2'] },
+                                    ].map((job, i) => (
+                                        <div key={i} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-lg transition relative overflow-hidden group">
+                                            {/* Match Badge */}
+                                            <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">
+                                                {job.match}% AI Match
+                                            </div>
+
+                                            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center font-bold text-gray-400 text-xl border border-gray-200">
+                                                        {job.company.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-lg text-navy-primary group-hover:text-peach-accent transition">{job.title}</h3>
+                                                        <p className="text-gray-600 font-semibold">{job.company}</p>
+                                                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Icon name="mapPin" size={12} /> {job.location}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-2 text-right">
+                                                    <div className="flex gap-2">
+                                                        {job.tags.map((tag, t) => (
+                                                            <span key={t} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded border border-gray-200">{tag}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-6 flex gap-3 pt-4 border-t border-gray-50">
+                                                <button className="flex-1 bg-navy-primary text-white font-bold py-2 rounded text-sm hover:bg-navy-dark transition uppercase">Apply with Profile</button>
+                                                <button className="px-4 py-2 border border-gray-300 text-gray-600 font-bold rounded text-sm hover:bg-gray-50 transition">Save</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-8 text-center bg-gray-50 p-6 rounded border border-dashed border-gray-300">
+                                    <h4 className="font-bold text-gray-600 mb-2">Want more matches?</h4>
+                                    <p className="text-sm text-gray-500 mb-4">Update your skill set in the Intake Form to trigger new AI recommendations.</p>
+                                    <button onClick={() => setActiveTab('intake')} className="text-peach-accent font-bold text-sm hover:underline">Edit Skills Profile</button>
                                 </div>
                             </div>
                         )}
@@ -304,6 +375,54 @@
                         {/* 4. HOUSING (Unchanged) */}
                         {activeTab === 'housing' && (
                             <div className="animate-fade-in">
+                                {/* RENTAL PROFILE FORM (For AI Matcher) */}
+                                <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg mb-8">
+                                    <h3 className="text-lg font-bold text-navy-primary mb-4 flex items-center gap-2"><Icon name="home" size={20} /> Your Rental Profile</h3>
+                                    <p className="text-sm text-gray-600 mb-6">Complete this detailed profile to get matched with Landlords via our AI Agent. This visualizes your "Trust Score".</p>
+
+                                    <div className="grid md:grid-cols-3 gap-6 mb-6">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Monthly Budget</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-3 text-gray-500">€</span>
+                                                <input type="number" placeholder="800" className="w-full pl-8 p-3 border rounded bg-white outline-none focus:border-peach-accent" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Guarantor Status</label>
+                                            <select className="w-full p-3 border rounded bg-white outline-none focus:border-peach-accent">
+                                                <option>Visale (Recommended)</option>
+                                                <option>Garantme</option>
+                                                <option>French Guarantor</option>
+                                                <option>International Guarantor</option>
+                                                <option>None</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Current Location</label>
+                                            <select className="w-full p-3 border rounded bg-white outline-none focus:border-peach-accent">
+                                                <option>Abroad (Need Visa)</option>
+                                                <option>In France (Have Visa)</option>
+                                                <option>EU Citizen</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded border border-blue-100">
+                                        <h4 className="font-bold text-sm text-gray-800 mb-4">Required Documents for AI Matching</h4>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <button className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded hover:bg-gray-50 transition text-left group">
+                                                <span className="text-sm text-gray-600 group-hover:text-blue-600 font-medium">Proof of Funds</span>
+                                                <Icon name="upload" size={16} className="text-gray-400 group-hover:text-blue-600" />
+                                            </button>
+                                            <button className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded hover:bg-gray-50 transition text-left group">
+                                                <span className="text-sm text-gray-600 group-hover:text-blue-600 font-medium">Guarantor Letter / Visale</span>
+                                                <Icon name="upload" size={16} className="text-gray-400 group-hover:text-blue-600" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-xl font-bold text-navy-primary">Verified Student Housing</h2>
                                     <button className="text-peach-accent font-bold text-sm flex items-center gap-1"><Icon name="filter" size={14} /> Filters</button>
