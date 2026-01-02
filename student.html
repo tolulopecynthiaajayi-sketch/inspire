@@ -190,8 +190,8 @@
                             <div className="animate-fade-in max-w-4xl mx-auto">
                                 <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
                                     <div className="mb-8 border-b border-gray-100 pb-4">
-                                        <h2 className="text-2xl font-bold text-navy-primary mb-2">Student Intake Form</h2>
-                                        <p className="text-gray-500 text-sm">Complete your profile so our counselors can match you with the best universities.</p>
+                                        <h2 className="text-2xl font-bold text-navy-primary mb-2">Master Profile</h2>
+                                        <p className="text-gray-500 text-sm">One profile to power your entire journey: Universities, Housing, Jobs, and Mentorship.</p>
                                     </div>
 
                                     <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
@@ -234,8 +234,43 @@
                                             </div>
                                         </div>
 
-                                        <div className="pt-4">
-                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">5</div> Personal Statement</h3>
+                                        {/* Housing Preferences */}
+                                        <div className="pt-4 border-t border-gray-100">
+                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">2</div> Housing Preferences</h3>
+                                            <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Max Monthly Budget</label>
+                                                    <input type="number" placeholder="e.g. 800" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Housing Type</label>
+                                                    <select className="w-full p-3 border rounded bg-white text-gray-700 border-gray-200 focus:border-peach-accent outline-none">
+                                                        <option>Studio (Solo)</option>
+                                                        <option>Shared Apartment (Coloc)</option>
+                                                        <option>Student Residence</option>
+                                                        <option>Host Family</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Career & Lifestyle */}
+                                        <div className="pt-4 border-t border-gray-100">
+                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">3</div> Career & Lifestyle</h3>
+                                            <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Top 3 Job Skills</label>
+                                                    <input type="text" placeholder="e.g. Python, Marketing, English C2" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none mb-2" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Hobbies & Interests</label>
+                                                    <input type="text" placeholder="e.g. Cooking, Football, Cinema" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-gray-100">
+                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">4</div> Personal Statement</h3>
                                             <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Background Narrative</label>
                                             <p className="text-xs text-gray-400 mb-2">Tell us about your background, interests, and goals. This helps us match you for jobs, housing, and mentorship.</p>
                                             <textarea className="w-full p-4 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none h-32" placeholder="I am a..."></textarea>
@@ -337,8 +372,8 @@
                                                 </div>
                                             </div>
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${app.status === 'submitted' ? 'bg-green-100 text-green-700' :
-                                                    app.status === 'review' ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-purple-100 text-purple-700'
+                                                app.status === 'review' ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-purple-100 text-purple-700'
                                                 }`}>
                                                 {app.statusLabel}
                                             </span>
