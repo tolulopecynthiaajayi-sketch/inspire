@@ -94,16 +94,10 @@
     - **Key Fields:** "Top 3 Course Preferences," "Level of Study" (Bachelor/Master/PhD), "Preferred City/Region."
 - **File Upload API:** To handle transcripts, passports, and CVs (supported formats: PDF, DOCX, JPEG) directly within the intake flow.
 - **Consultation Workflow:** Instead of direct application to schools, the system routes the profile to an internal counselor for review and matching.
-- **Narrative Background:** A dedicated text area for students to tell their "Story" (qualitative data used across all services).
 - **AI University Matcher (Admin Tool):**
     - **Logic:** "Agent" scans external databases (e.g., Campus France, Bachelors taught in English).
     - **Workflow:** AI suggests matches -> Counselor reviews & selects -> Counselor applies on student's behalf.
     - **Output:** A "Research Report" for the Admin, not visible to the student initially.
-- **Student Jobs Tab:**
-    - **Purpose:** For students already in France.
-    - **Features:** Listings for internships, part-time work (babysitting), etc.
-- **Housing "Tenant Profile":**
-    - **Input:** Specific questions (Guarantor, Budget) and Document Uploads (Tax return, ID) directly within the "Find Housing" tab to feed the Landlord AI.
 - **Notification System:** Email/Dashboard alerts for profile submission receipt and "Next Steps" from the Alora team.
 
 ## 3. Housing Offering Requirements
@@ -135,13 +129,10 @@
     - Auto-ranks candidates for Recruiters.
 - **Job Board Functionality:**
     - Recruiter dashboard for posting roles.
-    - **Language Levels:** Must include ALL levels (A1, A2, B1, B2, C1, C2, Native).
     - SEO-friendly job URLs to increase visibility on external search engines.
 - **Candidate Tracking:** "Request Talent Access" feature allowing companies to view a pre-vetted pool of students based on specific skills (e.g., language proficiency).
 - **Inquiry Forms:** Lead generation forms for partner inquiries (Company Name, HR Contact, Role Details).
 
 ## 6. Security & Compliance
 - **Data Protection:** Compliance with GDPR (General Data Protection Regulation) as the platform operates in France/EU.
-- **Encryption:** SSL/TLS encryption for all data in transit, particularly for sensitive student identity documents. 
-
-ftdd
+- **Encryption:** SSL/TLS encryption for all data in transit, particularly for sensitive student identity documents.
