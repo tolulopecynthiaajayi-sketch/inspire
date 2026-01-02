@@ -90,7 +90,7 @@
         const Dashboard = () => {
             const [activeTab, setActiveTab] = useState('tenants');
 
-            // Mock Data for AI Matching
+            // Mock Data for Tenant Matching
             // Context: French Market (Guarantor is key, >3x rent is standard)
             const listings = [
                 { id: 1, name: 'Studio Montmartre', rent: 950 },
@@ -105,23 +105,21 @@
                 { id: 4, name: 'John D.', age: 22, origin: 'UK', status: 'Intern', guarantor: 'None', income: 1000, docs: 50, avatar: 'bg-gray-100 text-gray-600' },
             ];
 
-            // AI Matching Algorithm
+            // Smart Matching Algorithm
             const getMatchScore = (student, propertyId) => {
                 const property = listings.find(l => l.id === parseInt(propertyId));
                 let score = 0;
 
-                // 1. Financial Logic (3x Rent Rule is standard in France)
-                if (student.income >= property.rent * 3) score += 40;
-                else if (student.income >= property.rent * 2.5) score += 20;
-
-                // 2. Guarantor Logic (Critical for French Landlords)
-                if (student.guarantor.includes('Visale') || student.guarantor.includes('Garantme')) score += 40; // High trust for ensured guarantors
-                else if (student.guarantor.includes('Parent')) score += 30;
+                // 1. Guarantor Logic (Critical for French Landlords - Heavily Weighted)
+                if (student.guarantor.includes('Visale') || student.guarantor.includes('Garantme')) score += 60; // High trust for ensured guarantors
+                else if (student.guarantor.includes('Parent')) score += 40;
                 else score -= 20; // No guarantor is a red flag
 
-                // 3. Status Bonuses
-                if (student.status.includes('PhD') || student.status.includes('Scholarship')) score += 10;
-                if (student.docs === 100) score += 10;
+                // 2. Status Bonuses
+                if (student.status.includes('PhD') || student.status.includes('Scholarship')) score += 20;
+                if (student.docs === 100) score += 20;
+
+
 
                 return Math.min(100, Math.max(0, score)); // Cap at 0-100
             };
@@ -154,7 +152,7 @@
                     <div className="flex gap-4 border-b border-gray-300 mb-6">
                         <button onClick={() => setActiveTab('listings')} className={`pb-3 font-bold text-sm uppercase ${activeTab === 'listings' ? 'text-navy-primary border-b-2 border-navy-primary' : 'text-gray-500'}`}>My Listings</button>
                         <button onClick={() => setActiveTab('tenants')} className={`pb-3 font-bold text-sm uppercase ${activeTab === 'tenants' ? 'text-navy-primary border-b-2 border-navy-primary' : 'text-gray-500'} flex items-center gap-2`}>
-                            <Icon name="sparkles" size={16} className="text-peach-accent" /> AI Tenant Matching
+                            <Icon name="sparkles" size={16} className="text-peach-accent" /> Smart Tenant Matching
                         </button>
                     </div>
 
@@ -202,8 +200,8 @@
                         <div className="animate-fade-in">
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                                 <div>
-                                    <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><Icon name="bot" className="text-peach-accent" /> AI Tenant Matcher</h3>
-                                    <p className="text-sm text-gray-500">Our AI ranks applicants based on French rental criteria (Guarantor, Income, Status).</p>
+                                    <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><Icon name="users" className="text-peach-accent" /> Smart Tenant Matcher</h3>
+                                    <p className="text-sm text-gray-500">Our system ranks applicants based on your criteria (Guarantor, Status, Reliability).</p>
                                 </div>
                                 <div className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-gray-200 shadow-sm">
                                     <span className="text-xs font-bold uppercase text-gray-500">Matching For:</span>
@@ -241,10 +239,6 @@
                                             <div className="flex justify-between">
                                                 <span className="text-gray-500 text-xs uppercase font-bold">Guarantor</span>
                                                 <span className={`font-bold ${student.guarantor.includes('None') ? 'text-red-500' : 'text-navy-primary'}`}>{student.guarantor}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500 text-xs uppercase font-bold">Monthly Income</span>
-                                                <span className={`font-bold ${student.income >= 2500 ? 'text-green-600' : 'text-gray-700'}`}>€{student.income}</span>
                                             </div>
                                             <div className="flex justify-between">
                                                 <span className="text-gray-500 text-xs uppercase font-bold">Documents</span>
