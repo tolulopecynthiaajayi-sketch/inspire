@@ -11,8 +11,11 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Firebase SDK Config -->
-    <script type="module" src="./js/firebaseConfig.js"></script>
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="./js/firebaseConfig.js"></script>
 
     <link
         href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap"
@@ -136,7 +139,7 @@
             useEffect(() => {
                 const isAdmin = sessionStorage.getItem('isAdmin');
                 if (!isAdmin) {
-                    window.location.href = 'login.html';
+                    window.location.href = 'admin-login.html';
                 }
             }, []);
 

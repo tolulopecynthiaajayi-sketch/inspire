@@ -80,20 +80,14 @@
 
 <body class="bg-gray-50 h-screen flex">
 
-    <!-- 1. Firebase Imports (Module) -->
-    <script type="module">
-        import { auth } from './js/firebaseConfig.js';
-        import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <!-- 1. Firebase Imports (Compat/Namespaced for file:// support) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
 
-        // Expose to window for the main script
-        window.auth = auth;
-        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
-        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
-        window.isFirebaseReady = true; // Flag for our script to check
-
-        // Dispatch event to notify our script
-        window.dispatchEvent(new Event('firebase-ready'));
-    </script>
+    <!-- 2. Config (Loads after SDKs) -->
+    <script src="./js/firebaseConfig.js"></script>
 
     <div class="flex w-full h-full">
         <!-- Left Side - Brand Visual -->
@@ -200,9 +194,24 @@
                     <div id="error-msg" class="text-red-500 text-xs text-center mt-2 hidden-op"></div>
                 </form>
 
+                <!-- Divider -->
+                <div class="flex items-center my-6">
+                    <div class="flex-grow border-t border-gray-200"></div>
+                    <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-bold">OR</span>
+                    <div class="flex-grow border-t border-gray-200"></div>
+                </div>
+
+                <!-- Google Button -->
+                <button id="google-btn" type="button"
+                    class="w-full py-3 bg-white border border-gray-200 rounded shadow-sm text-gray-700 font-bold text-sm flex justify-center items-center gap-2 hover:bg-gray-50 transition">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5"
+                        alt="Google">
+                    Sign in with Google
+                </button>
+
                 <div class="mt-6 text-center text-sm text-gray-500">
                     <span id="switch-text">Don't have an account? </span>
-                    <button id="switch-mode-btn" class="text-navy-primary font-bold hover:underline">
+                    <button type="button" id="switch-mode-btn" class="text-navy-primary font-bold hover:underline">
                         Sign Up
                     </button>
                 </div>
@@ -224,7 +233,6 @@
             { id: 'landlord', label: 'Landlord', icon: 'home', color: 'bg-peach-accent' },
             { id: 'family', label: 'Host Family', icon: 'heart', color: 'bg-purple-600' },
             { id: 'corporate', label: 'Corporate', icon: 'briefcase', color: 'bg-slate-800' },
-            { id: 'admin', label: 'Admin', icon: 'shield', color: 'bg-red-700' },
         ];
 
         // DOM Elements
@@ -248,6 +256,14 @@
         // Initialization
         function init() {
             lucide.createIcons();
+
+            // Check URL for role parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const roleParam = urlParams.get('role');
+            if (roleParam && roles.some(r => r.id === roleParam)) {
+                currentRole = roleParam;
+            }
+
             renderRoleButtons();
             updateUI();
         }
@@ -257,6 +273,7 @@
             roleContainer.innerHTML = '';
             roles.forEach(role => {
                 const btn = document.createElement('button');
+                btn.type = "button"; // Prevent form submission
                 btn.className = `flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition ${currentRole === role.id ? `${role.color} text-white shadow-md` : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`;
                 btn.innerHTML = `<i data-lucide="${role.icon}" width="14" height="14"></i> ${role.label}`;
                 btn.onclick = () => setRole(role.id);
@@ -351,9 +368,27 @@
             try {
                 let userCredential;
                 if (isLogin) {
-                    userCredential = await window.signInWithEmailAndPassword(window.auth, email, password);
+                    // Compat SDK uses global firebase.auth method
+                    userCredential = await window.auth.signInWithEmailAndPassword(email, password);
+
+                    // Email Verification Check
+                    if (!userCredential.user.emailVerified) {
+                        alert("Please verify your email address to log in.\n\nCheck your inbox for the verification link.");
+                        await window.auth.signOut();
+                        return;
+                    }
+
                 } else {
-                    userCredential = await window.createUserWithEmailAndPassword(window.auth, email, password);
+                    // Compat SDK uses global firebase.auth method
+                    userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
+
+                    // Send Verification Email
+                    await userCredential.user.sendEmailVerification();
+                    alert(`Account created! A verification email has been sent to ${email}.\n\nPlease check your inbox and click the link to verify your account before logging in.`);
+
+                    await window.auth.signOut();
+                    toggleMode();
+                    return;
                 }
 
                 console.log("Success:", userCredential.user);
@@ -381,9 +416,51 @@
             }
         });
 
+        // Google Sign-In Handler
+        document.getElementById('google-btn').addEventListener('click', async () => {
+            errorMsg.classList.add('hidden-op');
+
+            // System Check
+            if (!window.isFirebaseReady) {
+                return;
+            }
+
+            // Admin Check
+            // Admin Security Check
+            if (currentRole === 'admin') {
+                alert(`ACCESS DENIED: Google Sign-In is not supported for Administrators. Please use your master password.`);
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await window.auth.signInWithPopup(provider);
+                console.log("Google Login Success:", result.user);
+
+                // Redirect based on role
+                switch (currentRole) {
+                    case 'student': window.location.href = 'student.html'; break;
+                    case 'landlord': window.location.href = 'landlord.html'; break;
+                    case 'corporate': window.location.href = 'corporate.html'; break;
+                    case 'family': window.location.href = 'mentorship.html'; break;
+                    default: window.location.href = 'index.html';
+                }
+
+            } catch (err) {
+                console.error(err);
+                errorMsg.textContent = err.message.replace("Firebase: ", "");
+                errorMsg.classList.remove('hidden-op');
+            } finally {
+                setLoading(false);
+            }
+        });
+
         function setLoading(loading) {
             isLoading = loading;
             submitBtn.disabled = loading;
+            document.getElementById('google-btn').disabled = loading;
+
             if (loading) {
                 btnText.textContent = "Processing...";
                 btnIcon.classList.add('hidden-op');
@@ -397,10 +474,14 @@
             if (ready) {
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('google-btn').disabled = false;
+                document.getElementById('google-btn').classList.remove('opacity-50', 'cursor-not-allowed');
                 btnText.textContent = isLogin ? "Sign In" : "Create Account";
             } else {
                 submitBtn.disabled = true;
                 submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('google-btn').disabled = true;
+                document.getElementById('google-btn').classList.add('opacity-50', 'cursor-not-allowed');
                 btnText.textContent = "Connecting...";
             }
         }

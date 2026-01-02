@@ -1,10 +1,7 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+// Firebase Compat SDK Configuration
+// This version uses the global 'firebase' namespace so it works directly on the file:// protocol
+// without needing a local server.
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBG2ITjfDqdfSRsuI9AgufzQY95HO5Y7ME",
     authDomain: "alora-e67c7.firebaseapp.com",
@@ -15,15 +12,20 @@ const firebaseConfig = {
     measurementId: "G-TM4Y2682JV"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const analytics = getAnalytics(app);
+// Initialize Firebase (Global Namespace)
+if (typeof firebase !== 'undefined') {
+    const app = firebase.initializeApp(firebaseConfig);
 
-// Export for use in other files
-export { auth, db, analytics };
+    // Initialize Services
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+    window.analytics = firebase.analytics();
 
-// Attach to window for non-module scripts (optional but helpful for existing code)
-window.firebaseAuth = auth;
-window.firebaseDb = db;
+    console.log("Firebase Initialized (Compat Mode)");
+
+    // Notify app that we are ready
+    window.isFirebaseReady = true;
+    window.dispatchEvent(new Event('firebase-ready'));
+} else {
+    console.error("Firebase SDK not loaded. Make sure generic script tags are in the HTML.");
+}
