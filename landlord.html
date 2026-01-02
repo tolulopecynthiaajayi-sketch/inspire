@@ -76,12 +76,14 @@
                             </a>
                             <span className="font-bold text-white text-lg tracking-wider border-l border-gray-600 pl-4 ml-2">LANDLORD SUITE</span>
                         </div>
+
+
+
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2 text-sm">
                                 <span className="hidden md:inline text-gray-300">Welcome, Pierre</span>
                             </div>
                             <button className="bg-peach-accent px-4 py-2 rounded text-xs font-bold uppercase tracking-wide hover:bg-white hover:text-navy-primary transition">List Property</button>
-                            <a href="index.html" className="text-gray-300 hover:text-white" title="Back to Home"><Icon name="home" size={20} /></a>
                         </div>
                     </div>
                 </div>
@@ -91,12 +93,28 @@
         const Dashboard = () => {
             const [activeTab, setActiveTab] = useState('tenants');
 
-            // Mock Data for AI Matching
+            // Mock Data for Tenant Matching
             // Context: French Market (Guarantor is key, >3x rent is standard)
-            const listings = [
-                { id: 1, name: 'Studio Montmartre', rent: 950 },
-                { id: 2, name: '2BR Le Marais', rent: 1800 }
-            ];
+            const [listings, setListings] = useState([
+                { id: 1, name: 'Studio Montmartre', rent: 950, location: '18th Arr.', status: 'Occupied' },
+                { id: 2, name: '2BR Le Marais', rent: 1800, location: '4th Arr.', status: 'Vacant' }
+            ]);
+
+            // Add Property Form State
+            const [newProperty, setNewProperty] = useState({ name: '', location: '', rent: '', status: 'Vacant' });
+
+            const handleAddProperty = (e) => {
+                e.preventDefault();
+                const property = {
+                    id: Date.now(),
+                    ...newProperty,
+                    rent: parseInt(newProperty.rent)
+                };
+                setListings([...listings, property]);
+                setActiveTab('listings'); // Return to listings after add
+                setNewProperty({ name: '', location: '', rent: '', status: 'Vacant' }); // Reset form
+            };
+
             const [selectedProperty, setSelectedProperty] = useState(listings[0].id);
 
             const students = [
@@ -106,23 +124,21 @@
                 { id: 4, name: 'John D.', age: 22, origin: 'UK', status: 'Intern', guarantor: 'None', income: 1000, docs: 50, avatar: 'bg-gray-100 text-gray-600' },
             ];
 
-            // AI Matching Algorithm
+            // Smart Matching Algorithm
             const getMatchScore = (student, propertyId) => {
                 const property = listings.find(l => l.id === parseInt(propertyId));
                 let score = 0;
 
-                // 1. Financial Logic (3x Rent Rule is standard in France)
-                if (student.income >= property.rent * 3) score += 40;
-                else if (student.income >= property.rent * 2.5) score += 20;
-
-                // 2. Guarantor Logic (Critical for French Landlords)
-                if (student.guarantor.includes('Visale') || student.guarantor.includes('Garantme')) score += 40; // High trust for ensured guarantors
-                else if (student.guarantor.includes('Parent')) score += 30;
+                // 1. Guarantor Logic (Critical for French Landlords - Heavily Weighted)
+                if (student.guarantor.includes('Visale') || student.guarantor.includes('Garantme')) score += 60; // High trust for ensured guarantors
+                else if (student.guarantor.includes('Parent')) score += 40;
                 else score -= 20; // No guarantor is a red flag
 
-                // 3. Status Bonuses
-                if (student.status.includes('PhD') || student.status.includes('Scholarship')) score += 10;
-                if (student.docs === 100) score += 10;
+                // 2. Status Bonuses
+                if (student.status.includes('PhD') || student.status.includes('Scholarship')) score += 20;
+                if (student.docs === 100) score += 20;
+
+
 
                 return Math.min(100, Math.max(0, score)); // Cap at 0-100
             };
@@ -155,7 +171,7 @@
                     <div className="flex gap-4 border-b border-gray-300 mb-6">
                         <button onClick={() => setActiveTab('listings')} className={`pb-3 font-bold text-sm uppercase ${activeTab === 'listings' ? 'text-navy-primary border-b-2 border-navy-primary' : 'text-gray-500'}`}>My Listings</button>
                         <button onClick={() => setActiveTab('tenants')} className={`pb-3 font-bold text-sm uppercase ${activeTab === 'tenants' ? 'text-navy-primary border-b-2 border-navy-primary' : 'text-gray-500'} flex items-center gap-2`}>
-                            <Icon name="sparkles" size={16} className="text-peach-accent" /> AI Tenant Matching
+                            <Icon name="sparkles" size={16} className="text-peach-accent" /> Smart Tenant Matching
                         </button>
                     </div>
 
@@ -164,7 +180,7 @@
                         <div className="animate-fade-in">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="font-bold text-lg text-gray-800">Active Properties</h3>
-                                <button className="text-navy-primary text-sm font-bold flex items-center gap-1"><Icon name="plus" size={16} /> Add New</button>
+                                <button onClick={() => setActiveTab('add-property')} className="text-navy-primary text-sm font-bold flex items-center gap-1 hover:underline"><Icon name="plus" size={16} /> Add New Listing</button>
                             </div>
                             <div className="bg-white shadow rounded-lg overflow-hidden">
                                 <table className="w-full text-left text-sm text-gray-600">
@@ -198,71 +214,118 @@
                         </div>
                     )}
 
-                    {/* AI TENANT MATCHING */}
-                    {activeTab === 'tenants' && (
-                        <div className="animate-fade-in">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    {/* ADD PROPERTY FORM */}
+                    {activeTab === 'add-property' && (
+                        <div className="animate-fade-in max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                            <h3 className="font-bold text-xl text-navy-primary mb-6 flex items-center gap-2"><Icon name="home" /> Add New Property</h3>
+                            <form onSubmit={handleAddProperty} className="space-y-6">
                                 <div>
-                                    <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><Icon name="bot" className="text-peach-accent" /> AI Tenant Matcher</h3>
-                                    <p className="text-sm text-gray-500">Our AI ranks applicants based on French rental criteria (Guarantor, Income, Status).</p>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Property Name / Title</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="e.g. Cozy Studio near Sorbonne"
+                                        className="w-full p-3 border rounded border-gray-200 focus:border-peach-accent outline-none"
+                                        value={newProperty.name}
+                                        onChange={e => setNewProperty({ ...newProperty, name: e.target.value })}
+                                    />
                                 </div>
-                                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-gray-200 shadow-sm">
-                                    <span className="text-xs font-bold uppercase text-gray-500">Matching For:</span>
-                                    <select
-                                        className="text-sm font-bold text-navy-primary bg-transparent outline-none cursor-pointer"
-                                        value={selectedProperty}
-                                        onChange={(e) => setSelectedProperty(e.target.value)}
-                                    >
-                                        {listings.map(l => <option key={l.id} value={l.id}>{l.name} (€{l.rent})</option>)}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="grid md:grid-cols-3 gap-6">
-                                {sortedStudents.map((student, i) => (
-                                    <div key={student.id} className={`bg-white p-6 rounded-lg shadow transition relative border-t-4 ${student.score >= 90 ? 'border-green-500' : student.score >= 70 ? 'border-yellow-500' : 'border-red-500'}`}>
-
-                                        {/* Match Score Badge */}
-                                        <div className="absolute top-4 right-4 flex flex-col items-end">
-                                            <span className={`text-2xl font-black ${student.score >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>{student.score}%</span>
-                                            <span className="text-[10px] font-bold uppercase text-gray-400">Match Confidence</span>
-                                        </div>
-
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${student.avatar}`}>
-                                                {student.name.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-gray-900">{student.name} <span className="text-xs font-normal text-gray-500">({student.origin})</span></h4>
-                                                <p className="text-xs text-gray-500">{student.status} • {student.age}yo</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3 mb-6 bg-gray-50 p-4 rounded text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500 text-xs uppercase font-bold">Guarantor</span>
-                                                <span className={`font-bold ${student.guarantor.includes('None') ? 'text-red-500' : 'text-navy-primary'}`}>{student.guarantor}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500 text-xs uppercase font-bold">Monthly Income</span>
-                                                <span className={`font-bold ${student.income >= 2500 ? 'text-green-600' : 'text-gray-700'}`}>€{student.income}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500 text-xs uppercase font-bold">Documents</span>
-                                                <span className="font-bold text-blue-600">{student.docs}% Complete</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex gap-2">
-                                            <button className="flex-1 bg-navy-primary text-white py-3 rounded text-xs font-bold uppercase hover:bg-navy-dark shadow-md transition">Approve</button>
-                                            <button className="flex-1 border border-gray-300 text-gray-600 py-3 rounded text-xs font-bold uppercase hover:bg-gray-50 transition">View Dossier</button>
-                                        </div>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Location (Arrondissement)</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="e.g. 5th Arr."
+                                            className="w-full p-3 border rounded border-gray-200 focus:border-peach-accent outline-none"
+                                            value={newProperty.location}
+                                            onChange={e => setNewProperty({ ...newProperty, location: e.target.value })}
+                                        />
                                     </div>
-                                ))}
-                            </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Monthly Rent (€)</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            placeholder="e.g. 1200"
+                                            className="w-full p-3 border rounded border-gray-200 focus:border-peach-accent outline-none"
+                                            value={newProperty.rent}
+                                            onChange={e => setNewProperty({ ...newProperty, rent: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-3 pt-4">
+                                    <button type="button" onClick={() => setActiveTab('listings')} className="px-6 py-2 text-gray-500 font-bold hover:text-gray-700">Cancel</button>
+                                    <button type="submit" className="px-6 py-2 bg-navy-primary text-white font-bold rounded shadow hover:bg-navy-dark transition">Save Listing</button>
+                                </div>
+                            </form>
                         </div>
-                    )}
-                </div>
+                    )
+                    }
+
+                    {/* AI TENANT MATCHING */}
+                    {
+                        activeTab === 'tenants' && (
+                            <div className="animate-fade-in">
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2"><Icon name="users" className="text-peach-accent" /> Smart Tenant Matcher</h3>
+                                        <p className="text-sm text-gray-500">Our system ranks applicants based on your criteria (Guarantor, Status, Reliability).</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-gray-200 shadow-sm">
+                                        <span className="text-xs font-bold uppercase text-gray-500">Matching For:</span>
+                                        <select
+                                            className="text-sm font-bold text-navy-primary bg-transparent outline-none cursor-pointer"
+                                            value={selectedProperty}
+                                            onChange={(e) => setSelectedProperty(e.target.value)}
+                                        >
+                                            {listings.map(l => <option key={l.id} value={l.id}>{l.name} (€{l.rent})</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="grid md:grid-cols-3 gap-6">
+                                    {sortedStudents.map((student, i) => (
+                                        <div key={student.id} className={`bg-white p-6 rounded-lg shadow transition relative border-t-4 ${student.score >= 90 ? 'border-green-500' : student.score >= 70 ? 'border-yellow-500' : 'border-red-500'}`}>
+
+                                            {/* Match Score Badge */}
+                                            <div className="absolute top-4 right-4 flex flex-col items-end">
+                                                <span className={`text-2xl font-black ${student.score >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>{student.score}%</span>
+                                                <span className="text-[10px] font-bold uppercase text-gray-400">Match Confidence</span>
+                                            </div>
+
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${student.avatar}`}>
+                                                    {student.name.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-gray-900">{student.name} <span className="text-xs font-normal text-gray-500">({student.origin})</span></h4>
+                                                    <p className="text-xs text-gray-500">{student.status} • {student.age}yo</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3 mb-6 bg-gray-50 p-4 rounded text-sm">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500 text-xs uppercase font-bold">Guarantor</span>
+                                                    <span className={`font-bold ${student.guarantor.includes('None') ? 'text-red-500' : 'text-navy-primary'}`}>{student.guarantor}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500 text-xs uppercase font-bold">Documents</span>
+                                                    <span className="font-bold text-blue-600">{student.docs}% Complete</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <button className="flex-1 bg-navy-primary text-white py-3 rounded text-xs font-bold uppercase hover:bg-navy-dark shadow-md transition">Approve</button>
+                                                <button className="flex-1 border border-gray-300 text-gray-600 py-3 rounded text-xs font-bold uppercase hover:bg-gray-50 transition">View Dossier</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )
+                    }
+                </div >
             );
         };
 
