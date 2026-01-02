@@ -96,9 +96,17 @@
             const [role, setRole] = useState('student'); // student, landlord, corporate, family, admin
             const [isLogin, setIsLogin] = useState(true);
             const [isLoading, setIsLoading] = useState(false);
+            const [password, setPassword] = useState('');
 
             const handleAuth = (e) => {
                 e.preventDefault();
+
+                // Security Check for Admin
+                if (role === 'admin' && password !== 'admin123') {
+                    alert('ACCESS DENIED: Restricted to Administrators only.\nHint: Try "admin123"');
+                    return;
+                }
+
                 setIsLoading(true);
 
                 // Simulate API Call
@@ -171,6 +179,12 @@
                                 </div>
                                 <h2 className="text-2xl font-bold text-gray-900">{isLogin ? `Log in as ${activeRole.label}` : `Join as ${activeRole.label}`}</h2>
                                 <p className="text-gray-500 text-sm mt-1">Access your dedicated {activeRole.label.toLowerCase()} dashboard.</p>
+
+                                {role === 'admin' && (
+                                    <div className="mt-4 bg-red-100 border border-red-200 text-red-700 px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 justify-center animate-pulse">
+                                        <Icon name="lock" size={14} /> Authorized Personnel Only
+                                    </div>
+                                )}
                             </div>
 
                             <form onSubmit={handleAuth} className="space-y-4 animate-fade-in">
@@ -190,7 +204,14 @@
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                             <Icon name="lock" size={16} />
                                         </div>
-                                        <input type="password" placeholder="••••••••" className="w-full pl-10 p-3 border rounded bg-gray-50 border-gray-200 focus:border-navy-primary outline-none transition" required />
+                                        <input
+                                            type="password"
+                                            placeholder="••••••••"
+                                            className="w-full pl-10 p-3 border rounded bg-gray-50 border-gray-200 focus:border-navy-primary outline-none transition"
+                                            required
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                        />
                                     </div>
                                 </div>
 
@@ -232,8 +253,8 @@
                             </div>
 
                         </div>
-                    </div>
-                </div>
+                    </div >
+                </div >
             );
         };
 
