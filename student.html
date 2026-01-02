@@ -107,6 +107,21 @@
             // Mock state for custom upload
             const [newDocName, setNewDocName] = useState('');
 
+            // New state for Enrollment Status (Internal vs External)
+            const [enrollmentStatus, setEnrollmentStatus] = useState('prospective'); // 'prospective' or 'enrolled'
+
+            // New state for Services Needed (Modular Form)
+            const [services, setServices] = useState({
+                university: true,
+                housing: true,
+                jobs: true,
+                mentorship: true
+            });
+
+            const toggleService = (service) => {
+                setServices(prev => ({ ...prev, [service]: !prev[service] }));
+            };
+
             const handleCustomUpload = () => {
                 if (!newDocName) return;
                 const newDoc = { id: Date.now(), name: newDocName, type: 'custom', status: 'uploaded' };
@@ -195,6 +210,63 @@
                                     </div>
 
                                     <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
+                                        {/* 0. Enrollment Status Toggle */}
+                                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+                                            <div>
+                                                <h4 className="font-bold text-navy-primary text-sm">Where are you in your journey?</h4>
+                                                <p className="text-xs text-blue-700">Select the option that best describes you.</p>
+                                            </div>
+                                            <div className="flex bg-white rounded-full p-1 border border-blue-200 shadow-sm">
+                                                <button
+                                                    onClick={() => setEnrollmentStatus('prospective')}
+                                                    className={`px-4 py-2 rounded-full text-xs font-bold transition ${enrollmentStatus === 'prospective' ? 'bg-navy-primary text-white shadow' : 'text-gray-500 hover:text-navy-primary'}`}
+                                                >
+                                                    Applying to School
+                                                </button>
+                                                <button
+                                                    onClick={() => setEnrollmentStatus('enrolled')}
+                                                    className={`px-4 py-2 rounded-full text-xs font-bold transition ${enrollmentStatus === 'enrolled' ? 'bg-navy-primary text-white shadow' : 'text-gray-500 hover:text-navy-primary'}`}
+                                                >
+                                                    Already Enrolled
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 0.5 Service Selection */}
+                                        <div>
+                                            <h3 className="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wide">Select Services You Need</h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <div
+                                                    onClick={() => toggleService('university')}
+                                                    className={`cursor-pointer p-4 rounded-lg border text-center transition ${services.university ? 'bg-navy-primary text-white border-navy-primary' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                                >
+                                                    <div className="mb-2"><Icon name="graduationCap" size={20} className="mx-auto" /></div>
+                                                    <div className="text-xs font-bold">University</div>
+                                                </div>
+                                                <div
+                                                    onClick={() => toggleService('housing')}
+                                                    className={`cursor-pointer p-4 rounded-lg border text-center transition ${services.housing ? 'bg-peach-accent text-white border-peach-accent' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                                >
+                                                    <div className="mb-2"><Icon name="home" size={20} className="mx-auto" /></div>
+                                                    <div className="text-xs font-bold">Housing</div>
+                                                </div>
+                                                <div
+                                                    onClick={() => toggleService('jobs')}
+                                                    className={`cursor-pointer p-4 rounded-lg border text-center transition ${services.jobs ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                                >
+                                                    <div className="mb-2"><Icon name="briefcase" size={20} className="mx-auto" /></div>
+                                                    <div className="text-xs font-bold">Jobs</div>
+                                                </div>
+                                                <div
+                                                    onClick={() => toggleService('mentorship')}
+                                                    className={`cursor-pointer p-4 rounded-lg border text-center transition ${services.mentorship ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                                >
+                                                    <div className="mb-2"><Icon name="users" size={20} className="mx-auto" /></div>
+                                                    <div className="text-xs font-bold">Mentorship</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {/* Personal & Academic */}
                                         <div className="grid md:grid-cols-2 gap-6">
                                             <div>
@@ -207,67 +279,107 @@
                                             </div>
                                         </div>
 
-                                        {/* Course Preferences */}
-                                        <div>
-                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">1</div> Study Preferences</h3>
-                                            <div className="grid md:grid-cols-2 gap-6 mb-4">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Level of Study</label>
-                                                    <select className="w-full p-3 border rounded bg-white text-gray-700 border-gray-200 focus:border-peach-accent outline-none">
-                                                        <option>Bachelor's Degree</option>
-                                                        <option>Master's Degree</option>
-                                                        <option>PhD / Doctorate</option>
-                                                        <option>Language Course</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Preferred City/Region</label>
-                                                    <input type="text" placeholder="e.g. Paris, Lyon, Bordeaux" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
-                                                </div>
-                                            </div>
+                                        {/* 1. Study Information (Conditional) */}
+                                        {services.university && (
+                                            <div className="animate-fade-in border-t border-gray-100 pt-6">
+                                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full bg-navy-primary text-white flex items-center justify-center text-xs">A</div>
+                                                    {enrollmentStatus === 'prospective' ? 'Study Preferences' : 'Current Enrollment'}
+                                                </h3>
 
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Top 3 Courses you would like to study</label>
-                                            <div className="space-y-3">
-                                                <input type="text" placeholder="Preference #1 (e.g. International Business)" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
-                                                <input type="text" placeholder="Preference #2 (e.g. Marketing)" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
-                                                <input type="text" placeholder="Preference #3 (e.g. Economics)" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                {enrollmentStatus === 'prospective' ? (
+                                                    // PROSPECTIVE FLOW
+                                                    <div className="animate-fade-in">
+                                                        <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Level of Study</label>
+                                                                <select className="w-full p-3 border rounded bg-white text-gray-700 border-gray-200 focus:border-peach-accent outline-none">
+                                                                    <option>Bachelor's Degree</option>
+                                                                    <option>Master's Degree</option>
+                                                                    <option>PhD / Doctorate</option>
+                                                                    <option>Language Course</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Preferred City/Region</label>
+                                                                <input type="text" placeholder="e.g. Paris, Lyon, Bordeaux" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
+                                                            </div>
+                                                        </div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Top 3 Courses you would like to study</label>
+                                                        <div className="space-y-3">
+                                                            <input type="text" placeholder="Preference #1 (e.g. International Business)" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            <input type="text" placeholder="Preference #2 (e.g. Marketing)" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            <input type="text" placeholder="Preference #3 (e.g. Economics)" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    // ENROLLED FLOW
+                                                    <div className="animate-fade-in bg-gray-50 p-6 rounded border border-gray-200">
+                                                        <div className="grid md:grid-cols-2 gap-6">
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">University / School Name</label>
+                                                                <input type="text" placeholder="e.g. HEC Paris, Sorbonne" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Program / Major</label>
+                                                                <input type="text" placeholder="e.g. MBA Finance" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">City of Study</label>
+                                                                <input type="text" placeholder="e.g. Paris" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Start Date / Intake</label>
+                                                                <input type="month" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
+                                        )}
 
                                         {/* Housing Preferences */}
-                                        <div className="pt-4 border-t border-gray-100">
-                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">2</div> Housing Preferences</h3>
-                                            <div className="grid md:grid-cols-2 gap-6 mb-4">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Max Monthly Budget</label>
-                                                    <input type="number" placeholder="e.g. 800" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Housing Type</label>
-                                                    <select className="w-full p-3 border rounded bg-white text-gray-700 border-gray-200 focus:border-peach-accent outline-none">
-                                                        <option>Studio (Solo)</option>
-                                                        <option>Shared Apartment (Coloc)</option>
-                                                        <option>Student Residence</option>
-                                                        <option>Host Family</option>
-                                                    </select>
+                                        {services.housing && (
+                                            <div className="pt-6 border-t border-gray-100 animate-fade-in">
+                                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">B</div> Housing Preferences</h3>
+                                                <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Max Monthly Budget</label>
+                                                        <input type="number" placeholder="e.g. 800" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Housing Type</label>
+                                                        <select className="w-full p-3 border rounded bg-white text-gray-700 border-gray-200 focus:border-peach-accent outline-none">
+                                                            <option>Studio (Solo)</option>
+                                                            <option>Shared Apartment (Coloc)</option>
+                                                            <option>Student Residence</option>
+                                                            <option>Host Family</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
 
                                         {/* Career & Lifestyle */}
-                                        <div className="pt-4 border-t border-gray-100">
-                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">3</div> Career & Lifestyle</h3>
-                                            <div className="grid md:grid-cols-2 gap-6 mb-4">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Top 3 Job Skills</label>
-                                                    <input type="text" placeholder="e.g. Python, Marketing, English C2" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none mb-2" />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Hobbies & Interests</label>
-                                                    <input type="text" placeholder="e.g. Cooking, Football, Cinema" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
+                                        {(services.jobs || services.mentorship) && (
+                                            <div className="pt-6 border-t border-gray-100 animate-fade-in">
+                                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">C</div> Career & Lifestyle</h3>
+                                                <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                                    {services.jobs && (
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Top 3 Job Skills</label>
+                                                            <input type="text" placeholder="e.g. Python, Marketing, English C2" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none mb-2" />
+                                                        </div>
+                                                    )}
+                                                    {services.mentorship && (
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Hobbies & Interests</label>
+                                                            <input type="text" placeholder="e.g. Cooking, Football, Cinema" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
 
                                         <div className="pt-4 border-t border-gray-100">
                                             <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">4</div> Personal Statement</h3>
