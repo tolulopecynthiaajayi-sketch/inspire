@@ -380,17 +380,28 @@
 
                     // 2. Fetch User Role from Firestore (Persistence)
                     try {
-                        const userDoc = await window.db.collection('users').doc(userCredential.user.uid).get();
+                        const userRef = window.db.collection('users').doc(userCredential.user.uid);
+                        const userDoc = await userRef.get();
+
                         if (userDoc.exists) {
                             const userData = userDoc.data();
                             console.log("User Profile Loaded:", userData);
                             if (userData.role) {
                                 currentRole = userData.role; // Override local selection with source of truth
                             }
+                        } else {
+                            // BACKFILL: User exists in Auth but not in Firestore. Create profile now.
+                            console.log("No profile found. Creating one for existing user...");
+                            await userRef.set({
+                                email: email,
+                                role: currentRole,
+                                createdAt: new Date(),
+                                name: 'Returning User' // We don't have their name stored if they are legacy
+                            });
                         }
                     } catch (storeErr) {
-                        console.warn("Could not fetch user profile:", storeErr);
-                        // Continue anyway, maybe they are an old user without a profile doc
+                        console.warn("Could not fetch/create user profile:", storeErr);
+                        // Continue anyway
                     }
 
                 } else {
@@ -425,7 +436,11 @@
 
             } catch (err) {
                 console.error(err);
-                errorMsg.textContent = err.message.replace("Firebase: ", "");
+                if (err.code === 'permission-denied') {
+                    errorMsg.textContent = "Database permission denied. Please contact support.";
+                } else {
+                    errorMsg.textContent = err.message.replace("Firebase: ", "");
+                }
                 errorMsg.classList.remove('hidden-op');
             } finally {
                 setLoading(false);
@@ -446,7 +461,8 @@
                 const user = result.user;
 
                 // Check if user exists in Firestore
-                const userDoc = await window.db.collection('users').doc(user.uid).get();
+                const userRef = window.db.collection('users').doc(user.uid);
+                const userDoc = await userRef.get();
 
                 if (userDoc.exists) {
                     // Existing User: Use stored role
@@ -460,7 +476,7 @@
 
                 } else {
                     // New User: Create profile
-                    await window.db.collection('users').doc(user.uid).set({
+                    await userRef.set({
                         email: user.email,
                         role: currentRole,
                         createdAt: new Date(),
