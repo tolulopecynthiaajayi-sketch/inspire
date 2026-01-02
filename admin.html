@@ -10,6 +10,10 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase SDK Config -->
+    <script type="module" src="./js/firebaseConfig.js"></script>
+
     <link
         href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap"
         rel="stylesheet">
@@ -201,13 +205,13 @@
                 <div className="max-w-7xl mx-auto px-4 py-8">
                     {/* Tabs */}
                     <div className="flex gap-4 border-b border-gray-200 mb-8">
-                        {['intakes', 'housing', 'jobs', 'mentorship'].map(tab => (
+                        {['intakes', 'housing', 'jobs', 'mentorship', 'settings'].map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`pb-3 px-4 text-sm font-bold uppercase tracking-wide transition ${activeTab === tab ? 'text-navy-primary border-b-2 border-navy-primary' : 'text-gray-400 hover:text-navy-primary'}`}
                             >
-                                {tab === 'intakes' ? 'Student Intakes' : tab === 'housing' ? 'Property Approvals' : tab === 'jobs' ? 'Job Board' : 'Mentorships'}
+                                {tab === 'intakes' ? 'Student Intakes' : tab === 'housing' ? 'Property Approvals' : tab === 'jobs' ? 'Job Board' : tab === 'mentorship' ? 'Mentorships' : 'Settings'}
                             </button>
                         ))}
                     </div>
@@ -437,6 +441,43 @@
                                         ))}
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SETTINGS - CHANGE PASSWORD */}
+                    {activeTab === 'settings' && (
+                        <div className="animate-fade-in max-w-xl">
+                            <h2 className="font-bold text-xl text-navy-primary mb-6 flex items-center gap-2"><Icon name="lock" /> Admin Security Settings</h2>
+                            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                                <h3 className="font-bold text-lg mb-4 text-gray-800">Change Admin Password</h3>
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const newPass = e.target.newPassword.value;
+                                    const confirmPass = e.target.confirmPassword.value;
+                                    if (newPass === confirmPass && newPass.length > 0) {
+                                        localStorage.setItem('adminPassword', newPass);
+                                        alert('Password updated successfully! Please log in with your new password.');
+                                        sessionStorage.removeItem('isAdmin'); // Force re-login
+                                        window.location.href = 'login.html';
+                                    } else {
+                                        alert('Passwords do not match or are empty.');
+                                    }
+                                }}>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">New Password</label>
+                                            <input name="newPassword" type="password" className="w-full p-3 border rounded border-gray-200 outline-none focus:border-navy-primary" placeholder="Enter new password" required />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Confirm Password</label>
+                                            <input name="confirmPassword" type="password" className="w-full p-3 border rounded border-gray-200 outline-none focus:border-navy-primary" placeholder="Confirm new password" required />
+                                        </div>
+                                        <div className="pt-4">
+                                            <button type="submit" className="bg-peach-accent text-white font-bold py-3 px-6 rounded hover:bg-orange-700 transition w-full uppercase tracking-wide">Update Password</button>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     )}

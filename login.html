@@ -82,7 +82,10 @@
 
     <div id="root" class="w-full h-full"></div>
 
-    <script type="text/babel">
+    <script type="text/babel" data-type="module">
+        import { auth } from './js/firebaseConfig.js';
+        import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
         const { useState, useEffect } = React;
 
         const Icon = ({ name, size = 24, className }) => {
@@ -98,20 +101,33 @@
             const [isLoading, setIsLoading] = useState(false);
             const [password, setPassword] = useState('');
 
-            const handleAuth = (e) => {
+            const handleAuth = async (e) => {
                 e.preventDefault();
 
                 // Security Check for Admin
-                if (role === 'admin' && password !== 'admin123') {
-                    alert('ACCESS DENIED: Restricted to Administrators only.\nHint: Try "admin123"');
+                const validPassword = localStorage.getItem('adminPassword') || 'admin123';
+                if (role === 'admin' && password !== validPassword) {
+                    alert('ACCESS DENIED: Restricted to Administrators only.\nHint: Try "' + validPassword + '"');
                     return;
                 }
 
                 setIsLoading(true);
 
-                // Simulate API Call
-                setTimeout(() => {
-                    setIsLoading(false);
+                try {
+                    const email = e.target.querySelector('input[type="email"]').value;
+                    let userCredential;
+
+                    if (isLogin) {
+                        // SIGN IN
+                        userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    } else {
+                        // SIGN UP
+                        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    }
+
+                    const user = userCredential.user;
+                    console.log("Logged in:", user);
+
                     // Redirect based on role
                     if (role === 'admin') {
                         sessionStorage.setItem('isAdmin', 'true');
@@ -125,7 +141,13 @@
                             default: window.location.href = 'index.html';
                         }
                     }
-                }, 1500);
+
+                } catch (err) {
+                    console.error("Auth Error:", err);
+                    alert('Authentication Failed: ' + err.message);
+                } finally {
+                    setIsLoading(false);
+                }
             };
 
             const roles = [
