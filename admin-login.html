@@ -150,14 +150,7 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            // 1. Security Check (Client-Side)
-            const validMasterPass = localStorage.getItem('adminPassword') || 'admin123';
-            if (password !== validMasterPass) {
-                alert("ACCESS DENIED: Invalid Master Password.");
-                return;
-            }
-
-            // 2. Firebase Auth
+            // 1. Firebase Auth
             setLoading(true);
             try {
                 // Try logging in
@@ -166,11 +159,20 @@
                      userCredential = await window.auth.signInWithEmailAndPassword(email, password);
                 } catch (loginErr) {
                     if (loginErr.code === 'auth/user-not-found') {
-                        // User not found, and we don't allow signup here
-                        throw new Error("Admin account not found. Please contact support.");
+                        throw new Error("Admin account not found.");
                     } else {
                         throw loginErr;
                     }
+                }
+
+                // 2. Verify Admin Role
+                const uid = userCredential.user.uid;
+                const userDoc = await window.db.collection('users').doc(uid).get();
+                
+                if (!userDoc.exists || userDoc.data().role !== 'admin') {
+                    // Not an admin!
+                    await window.auth.signOut();
+                    throw new Error("ACCESS DENIED: You do not have administrator privileges.");
                 }
 
                 // 3. Success

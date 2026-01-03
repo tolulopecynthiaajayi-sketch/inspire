@@ -81,30 +81,34 @@
             );
         };
 
-        const NavBar = () => (
-            <nav className="bg-white shadow-md sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="flex justify-between h-20 items-center">
-                        <div className="flex items-center gap-3">
-                            <a href="index.html"><img src="logo.png" alt="Alora" className="h-16 w-auto object-contain" /></a>
-                            <span className="font-bold text-navy-primary text-xl tracking-tight hidden md:block">STUDENT PORTAL</span>
-                        </div>
+        const NavBar = ({ user, profile }) => {
+            const displayName = profile?.name || user?.displayName || 'Student';
+            const initials = displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
-
-
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                                <div className="w-8 h-8 rounded-full bg-peach-accent text-white flex items-center justify-center font-bold">JD</div>
-                                <span className="hidden md:inline">John Doe</span>
+            return (
+                <nav className="bg-white shadow-md sticky top-0 z-50">
+                    <div className="max-w-7xl mx-auto px-4">
+                        <div className="flex justify-between h-20 items-center">
+                            <div className="flex items-center gap-3">
+                                <a href="index.html"><img src="logo.png" alt="Alora" className="h-16 w-auto object-contain" /></a>
+                                <span className="font-bold text-navy-primary text-xl tracking-tight hidden md:block">STUDENT PORTAL</span>
                             </div>
-                            <button className="text-gray-400 hover:text-navy-primary"><Icon name="bell" size={20} /></button>
+
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                                    <div className="w-8 h-8 rounded-full bg-peach-accent text-white flex items-center justify-center font-bold">{initials}</div>
+                                    <span className="hidden md:inline">{displayName}</span>
+                                </div>
+                                <button className="text-gray-400 hover:text-navy-primary"><Icon name="bell" size={20} /></button>
+                                <button onClick={() => window.auth.signOut().then(() => window.location.href = 'index.html')} className="text-gray-400 hover:text-red-500" title="Logout"><Icon name="logOut" size={20} /></button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </nav>
-        );
+                </nav>
+            );
+        };
 
-        const Dashboard = () => {
+        const Dashboard = ({ user, profile }) => {
             const [activeTab, setActiveTab] = useState('intake');
             // Mock state for documents
             const [docs, setDocs] = useState([
@@ -279,7 +283,7 @@
                                         <div className="grid md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Full Name</label>
-                                                <input type="text" defaultValue="John Doe" className="w-full p-3 border rounded bg-gray-50 text-gray-900 border-gray-200 focus:border-peach-accent focus:ring-1 focus:ring-peach-accent outline-none transition" />
+                                                <input type="text" defaultValue={profile?.name || user?.displayName || ''} className="w-full p-3 border rounded bg-gray-50 text-gray-900 border-gray-200 focus:border-peach-accent focus:ring-1 focus:ring-peach-accent outline-none transition" />
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Current Degree/Qualification</label>
@@ -741,12 +745,43 @@
             );
         };
 
-        const App = () => (
-            <div>
-                <NavBar />
-                <Dashboard />
-            </div>
-        );
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [profile, setProfile] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            React.useEffect(() => {
+                const unsubscribe = window.auth.onAuthStateChanged(async (u) => {
+                    if (u) {
+                        setUser(u);
+                        if (window.db) {
+                            try {
+                                const doc = await window.db.collection('users').doc(u.uid).get();
+                                if (doc.exists) {
+                                    setProfile(doc.data());
+                                }
+                            } catch (e) {
+                                console.error("Error fetching profile:", e);
+                            }
+                        }
+                    } else {
+                        // Optional: Redirect to login if sensitive
+                        window.location.href = 'login.html';
+                    }
+                    setLoading(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            if (loading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-primary"></div></div>;
+
+            return (
+                <div>
+                    <NavBar user={user} profile={profile} />
+                    <Dashboard user={user} profile={profile} />
+                </div>
+            );
+        };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
