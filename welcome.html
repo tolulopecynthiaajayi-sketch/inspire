@@ -70,7 +70,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="./js/firebaseConfig.js"></script>
+    <script src="./js/firebaseConfig.js?v=force_reload_1"></script>
 
     <!-- Background Elements -->
     <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
@@ -105,31 +105,77 @@
             class="mt-8 text-gray-400 text-xs hover:text-red-500 underline animate-fade-in-up delay-300">
             Log out & Return Home
         </button>
+
+        <!-- Toast Notification (Hidden by default) -->
+        <div id="toast"
+            class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50">
+            Notification Message
+        </div>
     </div>
 
     <script>
         lucide.createIcons();
 
-        // 1. Logic
-        window.addEventListener('firebase-ready', () => {
+        // UI Helper: Show Toast
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `fixed bottom-10 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-lg transition-opacity duration-300 z-50 ${isError ? 'bg-red-600' : 'bg-gray-800'} text-white opacity-100`;
+
+            setTimeout(() => {
+                toast.className = toast.className.replace('opacity-100', 'opacity-0');
+            }, 3000);
+        }
+
+        function initWelcome() {
+            if (!window.auth) return;
+
             // Wait briefly for auth state to stabilize
             window.auth.onAuthStateChanged(async (user) => {
                 if (user) {
                     // Fetch profile
-                    const userDoc = await window.db.collection('users').doc(user.uid).get();
-                    if (userDoc.exists) {
-                        const data = userDoc.data();
-                        renderWelcome(user, data);
-                    } else {
-                        // Creates a fallback if database write was slow
+                    try {
+                        const userDoc = await window.db.collection('users').doc(user.uid).get();
+
+                        if (userDoc.exists) {
+                            const data = userDoc.data();
+                            renderWelcome(user, data);
+                        } else {
+                            // Fallback
+                            renderWelcome(user, { name: user.displayName || 'Friend', role: 'Member' });
+                        }
+                    } catch (e) {
+                        console.error("Profile load error:", e);
                         renderWelcome(user, { name: user.displayName || 'Friend', role: 'Member' });
                     }
                 } else {
                     // Not logged in? Redirect to login
-                    window.location.href = 'login.html';
+                    setTimeout(() => window.location.href = 'login.html', 1500);
                 }
             });
-        });
+        }
+
+        function checkAndInit() {
+            if (window.auth && window.db) {
+                initWelcome();
+                return true;
+            }
+            return false;
+        }
+
+        // aggressive strategy
+        if (!checkAndInit()) {
+            const timer = setInterval(() => {
+                if (checkAndInit()) {
+                    clearInterval(timer);
+                }
+            }, 100);
+
+            // Give up after 3 seconds
+            setTimeout(() => {
+                clearInterval(timer);
+            }, 3000);
+        }
 
         function renderWelcome(user, profile) {
             const greeting = document.getElementById('greeting');
@@ -148,39 +194,39 @@
             if (!user.emailVerified) {
                 // Scenario A: Verification Needed
                 content.innerHTML = `
-                    <div class="bg-blue-50 border border-blue-100 rounded-lg p-6 mb-6">
-                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i data-lucide="mail" width="24" height="24"></i>
-                        </div>
-                        <h3 class="text-lg font-bold text-gray-900 mb-2">Verify your Email</h3>
-                        <p class="text-gray-600 text-sm mb-4">
-                            We've sent a link to <strong class="text-gray-800">${user.email}</strong>.<br>
-                            Please click it to activate your ${roleLabel} account.
-                        </p>
-                        <button onclick="checkVerification()" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition mb-3">
-                            I've Verified It
-                        </button>
-                        <button onclick="resendEmail()" class="text-blue-600 text-sm font-semibold hover:underline">
-                            Resend Link
-                        </button>
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-6 mb-6">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="mail" width="24" height="24"></i>
                     </div>
-                `;
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Verify your Email</h3>
+                    <p class="text-gray-600 text-sm mb-4">
+                        We've sent a link to <strong class="text-gray-800">${user.email}</strong>.<br>
+                        Please click it to activate your ${roleLabel} account.
+                    </p>
+                    <button onclick="checkVerification()" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition mb-3">
+                        I've Verified It
+                    </button>
+                    <button onclick="resendEmail()" class="text-blue-600 text-sm font-semibold hover:underline">
+                        Resend Link
+                    </button>
+                </div>
+            `;
             } else {
                 // Scenario B: Ready to Go
                 content.innerHTML = `
-                    <div class="text-center py-4">
-                        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                            <i data-lucide="check" width="32" height="32"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">You're All Set!</h3>
-                        <p class="text-gray-600 text-sm mb-8 max-w-xs mx-auto">
-                            Your dashboard has been configured and is ready for you.
-                        </p>
-                        <button onclick="goToDashboard('${profile.role}')" class="w-full bg-navy-primary text-white font-bold py-4 rounded-lg shadow-lg hover:bg-navy-secondary transition transform hover:-translate-y-1">
-                            Go to My Dashboard <i data-lucide="arrow-right" class="inline w-4 h-4 ml-1"></i>
-                        </button>
+                <div class="text-center py-4">
+                    <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                        <i data-lucide="check" width="32" height="32"></i>
                     </div>
-                `;
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">You're All Set!</h3>
+                    <p class="text-gray-600 text-sm mb-8 max-w-xs mx-auto">
+                        Your dashboard has been configured and is ready for you.
+                    </p>
+                    <button onclick="goToDashboard('${profile.role}')" class="w-full bg-navy-primary text-white font-bold py-4 rounded-lg shadow-lg hover:bg-navy-secondary transition transform hover:-translate-y-1">
+                        Go to My Dashboard <i data-lucide="arrow-right" class="inline w-4 h-4 ml-1"></i>
+                    </button>
+                </div>
+            `;
             }
             lucide.createIcons();
         }
@@ -200,16 +246,21 @@
             const user = window.auth.currentUser;
             await user.reload(); // Force refresh from server
             if (user.emailVerified) {
-                location.reload(); // Reload to show Success State
+                showToast("Email verified! Redirecting...", false);
+                setTimeout(() => location.reload(), 1000);
             } else {
-                alert("Not yet verified! Please check your inbox (and spam folder).");
+                showToast("Not yet verified! Please check your inbox.", true);
             }
         }
 
         async function resendEmail() {
-            const user = window.auth.currentUser;
-            await user.sendEmailVerification();
-            alert("Verification link resent!");
+            try {
+                const user = window.auth.currentUser;
+                await user.sendEmailVerification();
+                showToast("Verification link resent!", false);
+            } catch (e) {
+                showToast("Error sending email. Try again later.", true);
+            }
         }
 
         function goToDashboard(role) {

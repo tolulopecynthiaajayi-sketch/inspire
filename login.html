@@ -408,13 +408,18 @@
                     // 1. Sign Up
                     userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
 
-                    // 2. Save User Profile
-                    await window.db.collection('users').doc(userCredential.user.uid).set({
-                        email: email,
-                        role: currentRole,
-                        createdAt: new Date(),
-                        name: document.getElementById('fullname').value || 'New User'
-                    });
+                    // 2. Save User Profile (Best Effort)
+                    try {
+                        await window.db.collection('users').doc(userCredential.user.uid).set({
+                            email: email,
+                            role: currentRole,
+                            createdAt: new Date(),
+                            name: document.getElementById('fullname').value || 'New User'
+                        });
+                    } catch (dbErr) {
+                        console.error("Profile creation failed (will retry on login):", dbErr);
+                        // Continue to email verification - crucial!
+                    }
 
                     // 3. Send Verification Email
                     await userCredential.user.sendEmailVerification();
