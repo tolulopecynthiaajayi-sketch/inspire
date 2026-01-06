@@ -152,23 +152,41 @@
             // 1. Live Intake Data (Firestore)
             const [intakes, setIntakes] = useState([]);
 
-            // 2. Mock Property Data
-            const properties = [
-                { id: 1, title: 'Studio Montmartre', landlord: 'Pierre D.', price: '€950', location: '18th Arr.', status: 'Pending Verification' },
-                { id: 2, title: '2BR Le Marais', landlord: 'Pierre D.', price: '€1800', location: '4th Arr.', status: 'Active' }
-            ];
+            // 2. Real Property Data from Firestore
+            const [properties, setProperties] = useState([]);
+            useEffect(() => {
+                if (!window.db) return;
+                const unsubscribe = window.db.collection('properties').onSnapshot(snap => {
+                    setProperties(snap.docs.map(d => ({ id: d.id, ...d.data(), title: d.data().name })));
+                });
+                return () => unsubscribe();
+            }, []);
 
-            // 3. Mock Job Data
-            const jobs = [
-                { id: 1, title: 'Marketing Intern', company: 'TechCorp', type: 'Remote', status: 'Pending Approval' },
-                { id: 2, title: 'Junior Developer', company: 'TechCorp', type: 'Paris', status: 'Active' }
-            ];
+            // 3. Real Job Data from Firestore
+            const [jobs, setJobs] = useState([]);
+            useEffect(() => {
+                if (!window.db) return;
+                const unsubscribe = window.db.collection('jobs').onSnapshot(snap => {
+                    setJobs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+                });
+                return () => unsubscribe();
+            }, []);
 
-            // 4. Mock Mentorship Data
-            const families = [
-                { id: 1, name: 'The Dubois Family', location: 'Lyon', status: 'Verified' },
-                { id: 2, name: 'Sophie & Marc', location: 'Paris', status: 'Pending Verification' }
-            ];
+            // 4. Real Mentorship Requests
+            const [families, setFamilies] = useState([]);
+            useEffect(() => {
+                if (!window.db) return;
+                const unsubscribe = window.db.collection('mentorship_requests').onSnapshot(snap => {
+                    setFamilies(snap.docs.map(d => ({
+                        id: d.id,
+                        ...d.data(),
+                        name: d.data().studentName || 'Unknown Student', // Display student name
+                        location: 'Pending', // Metadata not yet captured
+                        status: d.data().status
+                    })));
+                });
+                return () => unsubscribe();
+            }, []);
 
             const [autoMatchData, setAutoMatchData] = useState(null);
             const [activeApps, setActiveApps] = useState([]);

@@ -124,17 +124,22 @@
             const [mentees, setMentees] = useState([]);
             const [agreements, setAgreements] = useState([]);
 
-            // Fetch Real Students for Matching
+            // Fetch Real Mentorship Requests (Incoming from Students)
             useEffect(() => {
                 if (!window.db) return;
-                const unsubscribe = window.db.collection('users').where('role', '==', 'student').onSnapshot(snapshot => {
-                    const students = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data(),
-                        matchScore: Math.floor(Math.random() * (98 - 75 + 1) + 75) // Mock score for now until matching logic is moved here
-                    }));
-                    setMentees(students);
-                });
+                // In a real app, we might filter by 'status' == 'pending' or similar
+                const unsubscribe = window.db.collection('mentorship_requests')
+                    .orderBy('createdAt', 'desc')
+                    .onSnapshot(snapshot => {
+                        const requests = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data(),
+                            // Fallback for missing data if the student profile wasn't fully copied
+                            name: doc.data().studentName || 'Unknown Student',
+                            matchScore: Math.floor(Math.random() * (98 - 75 + 1) + 75) // AI Match Score (Mock for now)
+                        }));
+                        setMentees(requests);
+                    }, err => console.error("Error fetching mentorship requests", err));
                 return () => unsubscribe();
             }, []);
 
@@ -157,12 +162,11 @@
 
             const handleSignAndSend = async () => {
                 try {
-                    await window.db.collection('mentorship_requests').add({
-                        mentorId: 'mentor_1',
-                        studentId: selectedMentee.id,
-                        studentName: selectedMentee.name || 'Student',
-                        status: 'Pending Signature',
-                        createdAt: new Date().toISOString()
+                    // Update the EXISTING request instead of creating a new one
+                    await window.db.collection('mentorship_requests').doc(selectedMentee.id).update({
+                        mentorId: 'mentor_1', // Current user ID (mock for now)
+                        status: 'Signed by Mentor',
+                        signedAt: new Date().toISOString()
                     });
                     alert(`Contract sent to ${selectedMentee.name} for signature!`);
                     setShowContractModal(false);
