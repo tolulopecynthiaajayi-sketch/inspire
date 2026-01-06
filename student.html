@@ -1801,20 +1801,16 @@
             if (loading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div></div>;
 
             return (
-                <div>
-                    <NavBar user={user} />
-                    <ErrorBoundary>
-                        <Dashboard
-                            user={user}
-                            profile={profile}
-                            activeTab={activeTab}
-                            setActiveTab={setActiveTab}
-                            mentorshipRequests={mentorshipRequests}
-                            suggestedMentors={suggestedMentors}
-                            setSuggestedMentors={setSuggestedMentors}
-                            setMatchingState={setMatchingState}
-                        />
-                    </ErrorBoundary>
+                <div className="p-10 text-center">
+                    <h1 className="text-3xl font-bold text-green-600">DEBUG MODE: App is Running</h1>
+                    <p>User: {user ? user.email : 'No User'}</p>
+                    <p>Profile: {profile ? 'Loaded' : 'Loading...'}</p>
+                    {/* 
+                        <NavBar user={user} />
+                        <ErrorBoundary>
+                            <Dashboard ... />
+                        </ErrorBoundary>
+                        */}
                 </div>
             );
         };
