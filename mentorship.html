@@ -117,29 +117,49 @@
             </nav>
         );
 
-        const Dashboard = () => {
+        const Dashboard = ({ user, profile }) => {
             const [activeTab, setActiveTab] = useState('matches');
             const [showContractModal, setShowContractModal] = useState(false);
             const [selectedMentee, setSelectedMentee] = useState(null);
             const [mentees, setMentees] = useState([]);
             const [agreements, setAgreements] = useState([]);
 
+            // Form State
+            const [formData, setFormData] = useState({
+                name: profile?.name || '',
+                location: profile?.housing?.location || '',
+                bio: profile?.bio || '',
+                capacity: profile?.mentorship?.capacity || 1,
+                interests: profile?.interests ? profile.interests.join(', ') : ''
+            });
+
+            // Update form when profile loads
+            useEffect(() => {
+                if (profile) {
+                    setFormData({
+                        name: profile.name || '',
+                        location: profile.housing?.location || '',
+                        bio: profile.bio || '',
+                        capacity: profile.mentorship?.capacity || 1,
+                        interests: profile.interests ? profile.interests.join(', ') : ''
+                    });
+                }
+            }, [profile]);
+
             // Fetch Real Mentorship Requests (Incoming from Students)
             useEffect(() => {
                 if (!window.db) return;
-                // In a real app, we might filter by 'status' == 'pending' or similar
                 const unsubscribe = window.db.collection('mentorship_requests')
                     .orderBy('createdAt', 'desc')
                     .onSnapshot(snapshot => {
                         const requests = snapshot.docs.map(doc => ({
                             id: doc.id,
                             ...doc.data(),
-                            // Fallback for missing data if the student profile wasn't fully copied
                             name: doc.data().studentName || 'Unknown Student',
-                            matchScore: Math.floor(Math.random() * (98 - 75 + 1) + 75) // AI Match Score (Mock for now)
+                            matchScore: Math.floor(Math.random() * (98 - 75 + 1) + 75)
                         }));
                         setMentees(requests);
-                    }, err => console.error("Error fetching mentorship requests", err));
+                    });
                 return () => unsubscribe();
             }, []);
 
@@ -155,6 +175,24 @@
                 return () => unsubscribe();
             }, []);
 
+            // Handle Save Profile
+            const handleSaveProfile = async (e) => {
+                e.preventDefault();
+                try {
+                    await window.db.collection('users').doc(user.uid).set({
+                        name: formData.name,
+                        housing: { location: formData.location },
+                        bio: formData.bio,
+                        mentorship: { capacity: formData.capacity, isMentor: true },
+                        interests: formData.interests.split(',').map(s => s.trim()).filter(Boolean)
+                    }, { merge: true });
+                    alert("Mentor Profile Saved Successfully!");
+                } catch (err) {
+                    console.error("Error saving profile:", err);
+                    alert("Failed to save profile.");
+                }
+            };
+
             const initiateContract = (mentee) => {
                 setSelectedMentee(mentee);
                 setShowContractModal(true);
@@ -164,7 +202,8 @@
                 try {
                     // Update the EXISTING request instead of creating a new one
                     await window.db.collection('mentorship_requests').doc(selectedMentee.id).update({
-                        mentorId: 'mentor_1', // Current user ID (mock for now)
+                        mentorId: user.uid, // REAL ID
+                        mentorName: profile?.name || 'Alora Mentor',
                         status: 'Signed by Mentor',
                         signedAt: new Date().toISOString()
                     });
@@ -205,10 +244,82 @@
                         >
                             My Agreements
                         </button>
+                        <button
+                            onClick={() => setActiveTab('profile')}
+                            className={`pb-4 px-2 font-bold text-sm uppercase transition ${activeTab === 'profile' ? 'text-navy-primary border-b-4 border-navy-primary' : 'text-gray-400 hover:text-navy-primary'}`}
+                        >
+                            My Profile
+                        </button>
                     </div>
 
                     {/* CONTENT Area */}
                     <div className="min-h-[400px]">
+
+                        {/* PROFILE TAB */}
+                        {activeTab === 'profile' && (
+                            <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+                                <h3 className="font-bold text-xl text-navy-primary mb-6">Mentor Profile Settings</h3>
+                                <form onSubmit={handleSaveProfile} className="space-y-6">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Full Name</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-navy-primary outline-none"
+                                            value={formData.name}
+                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-1">Location (City)</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-navy-primary outline-none"
+                                                value={formData.location}
+                                                onChange={e => setFormData({ ...formData, location: e.target.value })}
+                                                placeholder="e.g. Paris"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-1">Student Capacity</label>
+                                            <input
+                                                type="number"
+                                                className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-navy-primary outline-none"
+                                                value={formData.capacity}
+                                                onChange={e => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+                                                min="1" max="5"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Bio / About You</label>
+                                        <textarea
+                                            className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-navy-primary outline-none h-32"
+                                            value={formData.bio}
+                                            onChange={e => setFormData({ ...formData, bio: e.target.value })}
+                                            placeholder="Tell students about yourself and why you want to mentor..."
+                                        ></textarea>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Interests/Hobbies (Comma separated)</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-navy-primary outline-none"
+                                            value={formData.interests}
+                                            onChange={e => setFormData({ ...formData, interests: e.target.value })}
+                                            placeholder="Travel, Cooking, Literature, Cinema..."
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">These tags help match you with students.</p>
+                                    </div>
+                                    <div className="pt-4 flex justify-end">
+                                        <button type="submit" className="bg-navy-primary text-white font-bold py-3 px-8 rounded hover:bg-navy-dark transition shadow">
+                                            Save Profile
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
 
                         {/* MATCHES SECTION */}
                         {activeTab === 'matches' && (
