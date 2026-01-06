@@ -561,19 +561,21 @@
             const [profile, setProfile] = useState(null);
             const [loading, setLoading] = useState(true);
 
-            useEffect(() => {
                 const unsubscribe = window.auth.onAuthStateChanged(async (u) => {
                     if (u) {
                         setUser(u);
                         // Fetch Profile
                         if (window.db) {
-                            window.db.collection('users').doc(u.uid).get().then(doc => {
+                            try {
+                                const doc = await window.db.collection('users').doc(u.uid).get();
                                 if (doc.exists) setProfile(doc.data());
-                                setLoading(false);
-                            });
+                            } catch (e) {
+                                console.error("Error fetching profile", e);
+                            }
                         }
+                        setLoading(false); // ALWAYS CLEAR LOADING
                     } else {
-                        window.location.href = 'login.html';
+                        window.location.href = 'login.html?role=family';
                     }
                 });
                 return () => unsubscribe();
