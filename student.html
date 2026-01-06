@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal | Alora Group</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="./js/firebaseConfig.js"></script>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #F8FAFC;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .nav-link {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .bg-navy-primary {
+            background-color: #1E3A8A;
+        }
+
+        .bg-navy-dark {
+            background-color: #0F172A;
+        }
+
+        .bg-navy-light {
+            background-color: #EFF6FF;
+        }
+
+        .text-navy-primary {
+            color: #1E3A8A;
+        }
+
+        .text-peach-accent {
+            color: #D9654C;
+        }
+
+        .bg-peach-accent {
+            background-color: #D9654C;
+        }
+
+        .border-peach-accent {
+            border-color: #D9654C;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const iconName = name.charAt(0).toUpperCase() + name.slice(1);
+            if (!window.lucide || !window.lucide.icons || !window.lucide.icons[iconName]) return null;
+            const iconDef = window.lucide.icons[iconName];
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {iconDef.map((child, index) => React.createElement(child[0], { ...child[1], key: index }))}
+                </svg>
+            );
+        };
+
+        const NavBar = ({ user, profile }) => {
+            const displayName = profile?.name || user?.displayName || 'Student';
+            const initials = displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+            return (
+                <nav className="bg-white shadow-md sticky top-0 z-50">
+                    <div className="max-w-7xl mx-auto px-4">
+                        <div className="flex justify-between h-20 items-center">
+                            <div className="flex items-center gap-3">
+                                <a href="index.html"><img src="logo.png" alt="Alora" className="h-16 w-auto object-contain" /></a>
+                                <span className="font-bold text-navy-primary text-xl tracking-tight hidden md:block">STUDENT PORTAL</span>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                                    <div className="w-8 h-8 rounded-full bg-peach-accent text-white flex items-center justify-center font-bold">{initials}</div>
+                                    <span className="hidden md:inline">{displayName}</span>
+                                </div>
+                                <button className="text-gray-400 hover:text-navy-primary"><Icon name="bell" size={20} /></button>
+                                <button onClick={() => window.auth.signOut().then(() => window.location.href = 'index.html')} className="text-gray-400 hover:text-red-500" title="Logout"><Icon name="logOut" size={20} /></button>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            );
+        };
+
+        const Dashboard = ({ user, profile }) => {
+            const [activeTab, setActiveTab] = useState('intake');
+            // Initial state should be empty, waiting for DB fetch
+            const [docs, setDocs] = useState([]);
+            // Mock state for custom upload
+            const [newDocName, setNewDocName] = useState('');
+            // State for Housing "Additional" docs
+            const [extraDocName, setExtraDocName] = useState('');
+
+            // Housing Profile State (Synced with Firestore)
+            const [housingProfile, setHousingProfile] = useState({
+                budget: '',
+                guarantor: 'None',
+                location: '', // Default: Restricted
+            });
+
+            // Sync profile prop to local state when loaded
+            React.useEffect(() => {
+                if (profile) {
+                    if (profile.housing) {
+                        setHousingProfile(prev => ({ ...prev, ...profile.housing }));
+                    }
+                    if (profile.enrollmentStatus) {
+                        setEnrollmentStatus(profile.enrollmentStatus);
+                    }
+                    // Load top-level location preference if available, else fallback to housing
+                    if (profile.location) {
+                        setHousingProfile(prev => ({ ...prev, location: profile.location }));
+                    } else if (profile.housing && profile.housing.location) {
+                        // Already handled by spread above, but ensures clarity
+                    }
+                }
+            }, [profile]);
+
+            // Real-time Jobs State (Moved to top level to avoid Hook errors)
+            const [realJobs, setRealJobs] = useState([]);
+
+            React.useEffect(() => {
+                if (!window.db) return;
+                const unsubscribe = window.db.collection('jobs')
+                    .where('status', '==', 'Active')
+                    .onSnapshot(snapshot => {
+                        const jobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setRealJobs(jobs);
+                    });
+                return () => unsubscribe();
+            }, []);
+
+            const saveHousingPreferences = async () => {
+                if (!user) return;
+                try {
+                    await window.db.collection('users').doc(user.uid).set({
+                        housing: housingProfile
+                    }, { merge: true });
+                    alert("Housing Preferences Saved! ✓");
+                } catch (e) {
+                    console.error("Error saving housing config:", e);
+                    alert("Save failed: " + e.message);
+                }
+            };
+
+            // New state for Enrollment Status (Internal vs External)
+            const [enrollmentStatus, setEnrollmentStatus] = useState('prospective'); // 'prospective' or 'enrolled'
+
+            // New state for Services Needed (Modular Form)
+            const [services, setServices] = useState({
+                university: true,
+                housing: true,
+                jobs: true,
+                mentorship: true
+            });
+
+            const toggleService = (service) => {
+                setServices(prev => ({ ...prev, [service]: !prev[service] }));
+            };
+
+            // --- DATA FETCHING (Persistence) ---
+            React.useEffect(() => {
+                if (!user || !window.db) return;
+
+                // 1. Fetch Documents
+                console.log("Fetching documents for user:", user.uid);
+                const unsubscribeDocs = window.db.collection('users').doc(user.uid).collection('documents')
+                    .orderBy('date', 'desc') // Optional: Order by date if you add a timestamp
+                    .onSnapshot(snapshot => {
+                        const loadedDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        // Merge with default/mock docs or replace them? 
+                        // Let's replace mock data with real data if it exists, or append. 
+                        // For now, let's just use real data + defaults if needed.
+                        console.log("Fetched Docs:", loadedDocs);
+                        // Always update state, even if empty, to reflect "0 documents"
+                        setDocs(loadedDocs);
+                    }, err => console.log("Docs fetch error", err));
+
+                // 2. Fetch Applications
+                const unsubscribeApps = window.db.collection('users').doc(user.uid).collection('applications')
+                    .onSnapshot(snapshot => {
+                        const loadedApps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        // Assuming you have a setAllApplications state or similar if we were storing them there.
+                        // But we haven't defined setAllApplications in this snippet scope fully. 
+                        // Let's check if we have a state for this. 
+                        // IF NO STATE, we skipt it for now, but user asked about DOCUMENTS specifically.
+                    }, err => console.log("Apps fetch error", err));
+
+                return () => {
+                    unsubscribeDocs();
+                    unsubscribeApps();
+                };
+            }, [user]);
+            // -----------------------------------
+
+            // --- AI MATCH LISTENER ---
+            const [aiMatches, setAiMatches] = useState(null);
+
+            useEffect(() => {
+                if (!user || !window.db) return;
+                const unsubscribe = window.db.collection('users').doc(user.uid)
+                    .collection('ai_matches').doc('latest')
+                    .onSnapshot(doc => {
+                        if (doc.exists) setAiMatches(doc.data());
+                    });
+                return () => unsubscribe();
+            }, [user]);
+
+            // --- AUTO-MATCHING AI (Background Agent) ---
+            const generateAutoMatches = async (uid, profile) => {
+                console.log("🤖 AI Agent: Triggering Auto-Match for", uid);
+
+                // 1. School Matching (Deep Search Logic)
+                let schoolMatches = [];
+                const coursePref = (profile.education?.course1 || '').toLowerCase();
+
+                if (coursePref.includes('computer') || coursePref.includes('data') || coursePref.includes('cyber')) {
+                    schoolMatches = [
+                        { id: 201, school: 'TalTech', program: 'MSc Cyber Security', city: 'Tallinn, Estonia', match: 96, tuition: '€6,000/yr' },
+                        { id: 301, school: 'Wroclaw Uni of Tech', program: 'MSc Applied CS', city: 'Wroclaw, Poland', match: 92, tuition: '€3,700/yr' }
+                    ];
+                } else if (coursePref.includes('business') || coursePref.includes('management') || coursePref.includes('marketing')) {
+                    schoolMatches = [
+                        { id: 101, school: 'Emlyon', program: 'MSc Digital Marketing', city: 'Lyon, France', match: 94, tuition: '€24,000/yr' },
+                        { id: 401, school: 'Nova SBE', program: 'MSc Management', city: 'Lisbon, Portugal', match: 91, tuition: '€12,000/yr' }
+                    ];
+                } else {
+                    // Generic Fallback
+                    schoolMatches = [
+                        { id: 501, school: 'TU Munich', program: 'MSc Informatics', city: 'Munich, Germany', match: 88, tuition: '€0' }
+                    ];
+                }
+
+                // 2. Housing Matching
+                let housingMatches = [];
+                /* Logic could use profile.housing.budget */
+                housingMatches = [
+                    { id: 'h1', title: 'Student Residence Hall', city: profile.education?.preferredCity || 'Paris', price: '€850/mo', match: 95 },
+                    { id: 'h2', title: 'Shared Apartment (Coloc)', city: profile.education?.preferredCity || 'Paris', price: '€600/mo', match: 88 }
+                ];
+
+                // 3. Job Matching
+                // 3. Job Matching
+                let jobMatches = [
+                    { id: 'j1', title: 'English Speaking Intern', company: 'TechStartup', location: 'Remote', match: 92, tags: ['English', 'Remote', 'Entry Level'] },
+                    { id: 'j2', title: 'Marketing Assistant', company: 'Global Brands', location: 'Paris', match: 85, tags: ['Marketing', 'French B1', 'Social Media'] }
+                ];
+
+                // 4. Mentorship Matching
+                let mentorMatches = [
+                    { id: 'm1', name: 'Sarah (Year 2)', origin: 'Alumni', match: 98 }
+                ];
+
+                const fullMatchReport = {
+                    date: new Date().toISOString(),
+                    schools: schoolMatches,
+                    housing: housingMatches,
+                    jobs: jobMatches,
+                    mentorship: mentorMatches,
+                    status: 'completed'
+                };
+
+                // Persist to Firestore
+                try {
+                    await window.db.collection('users').doc(uid).collection('ai_matches').doc('latest').set(fullMatchReport);
+                    console.log("✅ AI Auto-Match Completed & Saved!");
+                } catch (e) {
+                    console.error("AI Match Failed:", e);
+                }
+            };
+
+            // --- SAVE LOGIC (Robust & Simple) ---
+            const saveProfile = async () => {
+                if (!user || !window.db) return;
+                const btn = document.getElementById('btn-save-profile');
+                if (btn) { btn.innerText = 'Saving...'; btn.disabled = true; }
+
+                // Gather data safely from DOM
+                const getData = (id) => document.getElementById(id)?.value || '';
+
+                const profileData = {
+                    name: getData('input-name') || user.displayName,
+                    degree: getData('input-degree'),
+                    bio: getData('input-bio'),
+                    enrollmentStatus: enrollmentStatus, // Persist Status
+                    location: getData('input-location'), // Persist Location
+                    education: {
+                        level: getData('input-level'),
+                        preferredCity: getData('input-city'),
+                        course1: getData('input-course1'),
+                        course2: getData('input-course2'),
+                        course3: getData('input-course3')
+                    },
+                    skills: getData('input-skills'),
+                    hobbies: getData('input-hobbies'),
+                    lastUpdated: new Date()
+                };
+
+                try {
+                    await window.db.collection('users').doc(user.uid).set(profileData, { merge: true });
+
+                    // TRIGGER AUTO-MATCH
+                    await generateAutoMatches(user.uid, profileData);
+
+                    if (btn) btn.innerText = 'Saved! ✓';
+                    /* Force reload to update NavBar name if changed */
+                    if (profileData.name !== user.displayName) setTimeout(() => window.location.reload(), 1500);
+                } catch (e) {
+                    console.error("Save failed:", e);
+                    if (btn) btn.innerText = 'Error!';
+                }
+
+                setTimeout(() => {
+                    if (btn) { btn.innerText = 'Save Profile'; btn.disabled = false; }
+                }, 3000);
+            };
+            // ------------------------------------
+
+            const [uploading, setUploading] = useState(false);
+            const [selectedFile, setSelectedFile] = useState(null);
+
+            // --- GENERIC UPLOAD HELPER ---
+            const uploadDocument = async (file, name, type = 'custom') => {
+                const cloudName = "dapmg0oku";
+                const uploadPreset = "Alora download";
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", uploadPreset);
+
+                // Force 'raw' resource type
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("Cloudinary Error: " + response.statusText);
+
+                const data = await response.json();
+                const url = data.secure_url;
+                const docId = String(Date.now()); // Safe String ID
+
+                const newDoc = {
+                    id: docId,
+                    name: name,
+                    url: url,
+                    type: type,
+                    status: 'uploaded',
+                    date: new Date().toLocaleDateString()
+                };
+
+                // Update State & DB
+                setDocs(prev => [...prev, newDoc]);
+                await window.db.collection('users').doc(user.uid).collection('documents').doc(docId).set(newDoc);
+                return newDoc;
+            };
+
+            const uploadFile = async () => {
+                if (!selectedFile || !newDocName) {
+                    alert("Please select a file and enter a name.");
+                    return;
+                }
+                if (!user) { alert("System not ready."); return; }
+
+                setUploading(true);
+                try {
+                    await uploadDocument(selectedFile, newDocName, 'custom');
+                    setNewDocName('');
+                    setSelectedFile(null);
+                    const fileInput = document.getElementById('doc-upload-input');
+                    if (fileInput) fileInput.value = null;
+                    alert("Upload Successful! ✓");
+                } catch (error) {
+                    console.error("Upload Error:", error);
+                    alert("Upload failed: " + error.message);
+                }
+                setUploading(false);
+            };
+
+            // NEW: Handle Housing Specific Uploads
+            const handleHousingUpload = async (file, docName) => {
+                if (!file) return;
+                try {
+                    // Check if doc already exists? Optional: Overwrite logic could be added here
+                    await uploadDocument(file, docName, 'housing');
+                    alert(`${docName} Uploaded! ✓`);
+                } catch (error) {
+                    alert("Housing Upload Failed: " + error.message);
+                }
+            };
+
+            // Handle Extra Housing Uploads
+            const handleExtraUpload = async (file) => {
+                if (!file) return;
+                if (!extraDocName.trim()) { alert("Please enter a document name first."); return; }
+                try {
+                    await uploadDocument(file, extraDocName, 'housing_extra');
+                    setExtraDocName('');
+                    alert(`${extraDocName} Uploaded! ✓`);
+                } catch (error) {
+                    alert("Upload Failed: " + error.message);
+                }
+            };
+
+            // Handle CV Upload
+            const handleCVUpload = async (file) => {
+                if (!file) return;
+                try {
+                    await uploadDocument(file, 'My Resume (CV)', 'cv');
+                    alert("CV Uploaded Successfully! ✓");
+                } catch (error) {
+                    alert("CV Upload Failed: " + error.message);
+                }
+            };
+
+            const handleDelete = async (docId) => {
+                const docToDelete = docs.find(d => d.id === docId);
+                const confirmDelete = window.confirm(`Are you sure you want to delete "${docToDelete ? docToDelete.name : 'this document'}"?`);
+                if (!confirmDelete) return;
+
+                // Optimistic UI Update
+                setDocs(prev => prev.filter(d => d.id !== docId));
+
+                console.log("Attempting to delete doc:", docId, "for user:", user.uid);
+                try {
+                    await window.db.collection('users').doc(user.uid).collection('documents').doc(String(docId)).delete();
+                    console.log("Delete successful in Firestore");
+                    // No alert needed for delete usually, keeps flow smooth
+                } catch (error) {
+                    console.error("Delete failed:", error);
+                    alert("Delete failed: " + error.message);
+                    // Revert optimistic update if needed, but rare
+                }
+            };
+
+            const applyToJob = async (job) => {
+                if (!user) return;
+
+                // check for CV
+                const hasCV = docs.some(d => d.type === 'cv');
+                if (!hasCV) {
+                    alert("⚠️ Please upload your CV before applying.");
+                    return;
+                }
+
+                const newApp = {
+                    id: Date.now(),
+                    type: 'job',
+                    title: job.title,
+                    subtitle: job.company,
+                    status: 'submitted',
+                    statusLabel: 'Applied',
+                    date: new Date().toLocaleDateString(),
+                    icon: 'briefcase',
+                    color: 'text-blue-600',
+                    bgColor: 'bg-blue-50',
+                    details: 'Application sent to employer.'
+                };
+
+                // Optimistic UI updates
+                alert(`Applied to ${job.title}! Track it in 'My Applications'.`);
+
+                // Firestore write
+                // Firestore write
+                try {
+                    // 1. Save to Student's private collection (for their dashboard)
+                    await window.db.collection('users').doc(user.uid).collection('applications').doc(String(newApp.id)).set(newApp);
+
+                    // 2. Save to Global 'job_applications' collection (for Corporate portal)
+                    const globalAppKey = `${newApp.id}_${user.uid}`;
+                    await window.db.collection('job_applications').doc(globalAppKey).set({
+                        ...newApp,
+                        studentId: user.uid,
+                        studentName: (profile && profile.name) || user.displayName || 'Unknown Student',
+                        cvUrl: docs.find(d => d.type === 'cv')?.url || '',
+                        jobId: (job.title + job.company).replace(/[^a-zA-Z0-9]/g, '_'), // Best effort ID
+                        companyName: job.company
+                    });
+
+                    alert("Application Sent! 🚀");
+                    // No need to manually prompt "Saved" as button will update
+                } catch (e) {
+                    console.error("App submit error", e);
+                    alert("Application error: " + e.message);
+                }
+            };
+
+            // SAVED JOBS LOGIC
+            const [savedJobs, setSavedJobs] = useState([]);
+
+            // Listen for Saved Jobs
+            React.useEffect(() => {
+                if (!user || !window.db) return;
+                const unsubscribe = window.db.collection('users').doc(user.uid).collection('saved_jobs')
+                    .onSnapshot(snapshot => {
+                        const jobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setSavedJobs(jobs);
+                    });
+                return () => unsubscribe();
+            }, [user]);
+
+            const toggleSaveJob = async (job) => {
+                if (!user) return;
+                // Generate a consistent ID based on job content
+                const jobId = (job.title + job.company).replace(/[^a-zA-Z0-9]/g, '_');
+
+                const isSaved = savedJobs.some(j => j.id === jobId);
+
+                try {
+                    if (isSaved) {
+                        await window.db.collection('users').doc(user.uid).collection('saved_jobs').doc(jobId).delete();
+                    } else {
+                        await window.db.collection('users').doc(user.uid).collection('saved_jobs').doc(jobId).set({
+                            ...job,
+                            id: jobId,
+                            savedAt: new Date().toISOString()
+                        });
+                    }
+                } catch (e) {
+                    console.error("Save toggle error", e);
+                    alert("Could not update saved jobs.");
+                }
+            };
+
+            const handleRename = (id, newName) => {
+                setDocs(docs.map(d => d.id === id ? { ...d, name: newName } : d));
+            };
+
+            // Unified Applications State
+            const [allApplications, setAllApplications] = useState([]);
+
+            // Listen for Real Applications (Jobs + Personal)
+            React.useEffect(() => {
+                if (!user || !window.db) return;
+
+                // 1. Job Applications (Global collection, filtered by studentId)
+                const unsubscribeJobs = window.db.collection('job_applications')
+                    .where('studentId', '==', user.uid)
+                    .onSnapshot(snapshot => {
+                        const jobApps = snapshot.docs.map(doc => {
+                            const data = doc.data();
+                            return {
+                                id: doc.id,
+                                type: 'job',
+                                title: data.title,
+                                subtitle: data.companyName,
+                                status: 'submitted', // Default for now
+                                statusLabel: 'Applied',
+                                date: new Date().toLocaleDateString(), // Mock date if missing
+                                icon: 'briefcase',
+                                color: 'text-blue-600',
+                                bgColor: 'bg-blue-50',
+                                details: 'Application sent to employer.',
+                                collection: 'job_applications' // For delete logic
+                            };
+                        });
+
+                        // Merge with existing non-job apps (handled by separate listener ideally, but for now let's just use local state merging if we had multiple sources. 
+                        // To keep it simple, we'll re-fetch everything dependent on these listeners)
+                        // Actually, let's better combine them. For this step I will just setAllApplications with these jobs first, and then merge others if I add the second listener.
+                        // But wait, the previous code had university apps too.
+                        // Let's implement the second listener for 'users/{uid}/applications' right here or in a separate effect that merges.
+                        // Best way: Use a functional state update or separate state variables and a merger effect.
+                        // Let's use separate states for clarity.
+                        setJobApplications(jobApps);
+                    });
+
+                return () => unsubscribeJobs();
+            }, [user]);
+
+            // Separate states for merging
+            const [jobApplications, setJobApplications] = useState([]);
+            const [otherApplications, setOtherApplications] = useState([]);
+
+            const [properties, setProperties] = useState([]);
+            const [mentorshipRequests, setMentorshipRequests] = useState([]);
+
+            // Listen for Real Properties
+            React.useEffect(() => {
+                if (!window.db) return;
+                const unsubscribe = window.db.collection('properties')
+                    .onSnapshot(snapshot => {
+                        const props = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setProperties(props);
+                    });
+                return () => unsubscribe();
+            }, []);
+
+            // Listen for Mentorship Requests (Incoming for Student)
+            React.useEffect(() => {
+                if (!user || !window.db) return;
+                // Assuming student ID matches user.uid, or we use a consistent mock ID for verification if user.uid is random
+                // For this demo, let's query where studentId == user.uid
+                const unsubscribe = window.db.collection('mentorship_requests')
+                    .where('studentId', '==', user.uid)
+                    .onSnapshot(snapshot => {
+                        const reqs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setMentorshipRequests(reqs);
+                    });
+                return () => unsubscribe();
+            }, [user]);
+
+            // Listen for Other Applications
+            React.useEffect(() => {
+                if (!user || !window.db) return;
+                const unsubscribeApps = window.db.collection('users').doc(user.uid).collection('applications')
+                    .onSnapshot(snapshot => {
+                        const otherApps = snapshot.docs.map(doc => {
+                            const data = doc.data();
+                            return {
+                                id: doc.id,
+                                type: data.type || 'university',
+                                title: data.title,
+                                ...data,
+                                collection: `users/${user.uid}/applications`
+                            };
+                        });
+                        setOtherApplications(otherApps);
+                    });
+                return () => unsubscribeApps();
+            }, [user]);
+
+            // Merge effects
+            React.useEffect(() => {
+                const all = [...jobApplications, ...otherApplications];
+                const unique = Array.from(new Map(all.map(item => [item.id, item])).values());
+                setAllApplications(unique);
+            }, [jobApplications, otherApplications]);
+
+            const handleWithdraw = async (app) => {
+                if (!confirm("Are you sure you want to withdraw this application?")) return;
+                try {
+                    await window.db.collection(app.collection).doc(app.id).delete();
+                    // Also delete from user's private collection if it exists there, but for jobs we used global.
+                    // If we stored it in multiple places (like we did for applyToJob: users/{uid}/applications AND job_applications/id), we should delete both.
+                    // For now, let's just delete the one we found.
+                    if (app.type === 'job') {
+                        // We also saved to users/uid/applications in applyToJob. Let's try to delete that too.
+                        await window.db.collection('users').doc(user.uid).collection('applications').doc(app.id.split('_')[0]).delete().catch(e => console.warn("Could not delete private copy", e));
+                    }
+                } catch (e) {
+                    console.error("Withdraw Error", e);
+                    alert("Failed to withdraw application.");
+                }
+            };
+
+            // --- FEATURE UNLOCK LOGIC ---
+            const isHousingUnlocked = enrollmentStatus === 'enrolled';
+            const isLifestyleUnlocked = housingProfile.location === 'In France (Have Visa)';
+
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    {/* Tabs */}
+                    <div className="flex overflow-x-auto gap-2 border-b border-gray-200 mb-8">
+                        {[
+                            { id: 'intake', label: 'Student Profile' },
+                            { id: 'housing', label: 'Find Housing', locked: !isHousingUnlocked, reason: "You must be 'Already Enrolled' to access housing." },
+                            { id: 'jobs', label: 'Student Jobs', locked: !isLifestyleUnlocked, reason: "You must be 'In France' to access jobs." },
+                            { id: 'mentorship', label: 'Mentorship', locked: !isLifestyleUnlocked, reason: "You must be 'In France' to access mentorship." },
+                            { id: 'applications', label: 'My Applications' },
+                            { id: 'documents', label: 'Document Vault' }
+                        ].map(tab => {
+                            const isLocked = tab.locked;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => {
+                                        if (isLocked) {
+                                            alert(`🔒 Restricted Access\n\n${tab.reason}\n\nPlease update your Profile status to unlock.`);
+                                        } else {
+                                            setActiveTab(tab.id);
+                                        }
+                                    }}
+                                    className={`px-6 py-3 font-bold text-sm uppercase tracking-wide whitespace-nowrap transition-colors border-b-2 flex items-center gap-2 
+                                        ${activeTab === tab.id ? 'border-peach-accent text-navy-primary' :
+                                            isLocked ? 'border-transparent text-gray-300 cursor-not-allowed' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    {tab.label}
+                                    {isLocked && <Icon name="lock" size={14} />}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Content */}
+                    <div className="min-h-[500px]">
+
+                        {/* 1. STUDENT INTAKE (Replaces School Search) */}
+                        {activeTab === 'intake' && (
+                            <div className="animate-fade-in max-w-4xl mx-auto">
+                                <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                                    <div className="mb-8 border-b border-gray-100 pb-4">
+                                        <h2 className="text-2xl font-bold text-navy-primary mb-2">Master Profile</h2>
+                                        <p className="text-gray-500 text-sm">One profile to power your entire journey: Universities, Housing, Jobs, and Mentorship.</p>
+                                    </div>
+
+                                    <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
+                                        {/* 0. Enrollment Status Toggle */}
+                                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+                                            <div>
+                                                <h4 className="font-bold text-navy-primary text-sm">Where are you in your journey?</h4>
+                                                <p className="text-xs text-blue-700">Select the option that best describes you.</p>
+                                            </div>
+                                            <div className="flex bg-white rounded-full p-1 border border-blue-200 shadow-sm">
+                                                <button
+                                                    onClick={() => setEnrollmentStatus('prospective')}
+                                                    className={`px-4 py-2 rounded-full text-xs font-bold transition ${enrollmentStatus === 'prospective' ? 'bg-navy-primary text-white shadow' : 'text-gray-500 hover:text-navy-primary'}`}
+                                                >
+                                                    Applying to School
+                                                </button>
+                                                <button
+                                                    onClick={() => setEnrollmentStatus('enrolled')}
+                                                    className={`px-4 py-2 rounded-full text-xs font-bold transition ${enrollmentStatus === 'enrolled' ? 'bg-navy-primary text-white shadow' : 'text-gray-500 hover:text-navy-primary'}`}
+                                                >
+                                                    Already Enrolled
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 0.5 Service Selection */}
+                                        <div>
+                                            <h3 className="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wide">Select Services You Need</h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <div
+                                                    onClick={() => toggleService('university')}
+                                                    className={`cursor-pointer p-4 rounded-lg border text-center transition ${services.university ? 'bg-navy-primary text-white border-navy-primary' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                                >
+                                                    <div className="mb-2"><Icon name="graduationCap" size={20} className="mx-auto" /></div>
+                                                    <div className="text-xs font-bold">University</div>
+                                                </div>
+                                                <div
+                                                    onClick={() => toggleService('housing')}
+                                                    className={`cursor-pointer p-4 rounded-lg border text-center transition ${services.housing ? 'bg-peach-accent text-white border-peach-accent' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                                >
+                                                    <div className="mb-2"><Icon name="home" size={20} className="mx-auto" /></div>
+                                                    <div className="text-xs font-bold">Housing</div>
+                                                </div>
+                                                <div
+                                                    onClick={() => toggleService('jobs')}
+                                                    className={`cursor-pointer p-4 rounded-lg border text-center transition ${services.jobs ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                                >
+                                                    <div className="mb-2"><Icon name="briefcase" size={20} className="mx-auto" /></div>
+                                                    <div className="text-xs font-bold">Jobs</div>
+                                                </div>
+                                                <div
+                                                    onClick={() => toggleService('mentorship')}
+                                                    className={`cursor-pointer p-4 rounded-lg border text-center transition ${services.mentorship ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                                >
+                                                    <div className="mb-2"><Icon name="users" size={20} className="mx-auto" /></div>
+                                                    <div className="text-xs font-bold">Mentorship</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Personal & Academic */}
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Full Name</label>
+                                                <input id="input-name" type="text" defaultValue={profile?.name || user?.displayName || ''} className="w-full p-3 border rounded bg-gray-50 text-gray-900 border-gray-200 focus:border-peach-accent focus:ring-1 focus:ring-peach-accent outline-none transition" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Current Degree/Qualification</label>
+                                                <input id="input-degree" type="text" defaultValue={profile?.degree || ''} placeholder="e.g. High School Diploma" className="w-full p-3 border rounded bg-gray-50 text-gray-900 border-gray-200 focus:border-peach-accent focus:ring-1 focus:ring-peach-accent outline-none transition" />
+                                            </div>
+                                        </div>
+
+                                        {/* 1. Study Information (Conditional) */}
+                                        {services.university && (
+                                            <div className="animate-fade-in border-t border-gray-100 pt-6">
+                                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full bg-navy-primary text-white flex items-center justify-center text-xs">A</div>
+                                                    {enrollmentStatus === 'prospective' ? 'Study Preferences' : 'Current Enrollment'}
+                                                </h3>
+
+                                                {enrollmentStatus === 'prospective' ? (
+                                                    // PROSPECTIVE FLOW
+                                                    <div className="animate-fade-in">
+                                                        <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Level of Study</label>
+                                                                <select id="input-level" defaultValue={profile?.education?.level || ''} className="w-full p-3 border rounded bg-white text-gray-700 border-gray-200 focus:border-peach-accent outline-none">
+                                                                    <option>Bachelor's Degree</option>
+                                                                    <option>Master's Degree</option>
+                                                                    <option>PhD / Doctorate</option>
+                                                                    <option>Language Course</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Preferred City/Region</label>
+                                                                <input id="input-city" defaultValue={profile?.education?.preferredCity || ''} type="text" placeholder="e.g. Paris, Lyon, Bordeaux" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
+                                                            </div>
+                                                        </div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Top 3 Courses you would like to study</label>
+                                                        <div className="space-y-3">
+                                                            <input id="input-course1" defaultValue={profile?.education?.course1 || ''} type="text" placeholder="Preference #1 (e.g. International Business)" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            <input id="input-course2" defaultValue={profile?.education?.course2 || ''} type="text" placeholder="Preference #2 (e.g. Marketing)" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            <input id="input-course3" defaultValue={profile?.education?.course3 || ''} type="text" placeholder="Preference #3 (e.g. Economics)" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    // ENROLLED FLOW
+                                                    <div className="animate-fade-in bg-gray-50 p-6 rounded border border-gray-200">
+                                                        <div className="grid md:grid-cols-2 gap-6">
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">University / School Name</label>
+                                                                <input type="text" placeholder="e.g. HEC Paris, Sorbonne" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Program / Major</label>
+                                                                <input type="text" placeholder="e.g. MBA Finance" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">City of Study</label>
+                                                                <input type="text" placeholder="e.g. Paris" className="w-full p-3 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Current Residency Status</label>
+                                                                <select id="input-location" defaultValue={profile?.location || 'In Home Country'} className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none">
+                                                                    <option>In Home Country</option>
+                                                                    <option>In France (Have Visa)</option>
+                                                                    <option>In France (No Visa)</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Housing Preferences & Listings */}
+                                        {services.housing && (
+                                            <div className="pt-6 border-t border-gray-100 animate-fade-in">
+                                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">B</div> Housing</h3>
+
+                                                {/* Properties List (From Firestore) */}
+                                                <div className="mb-6">
+                                                    <h4 className="font-bold text-navy-primary text-sm mb-3">Available Properties</h4>
+                                                    {properties.length === 0 ? (
+                                                        <p className="text-gray-400 text-sm">No properties listed yet.</p>
+                                                    ) : (
+                                                        <div className="grid md:grid-cols-2 gap-4">
+                                                            {properties.map(p => (
+                                                                <div key={p.id} className="bg-white border hover:border-peach-accent transition p-4 rounded shadow-sm relative group cursor-pointer" onClick={() => alert("Application started for: " + p.name)}>
+                                                                    <div className="flex justify-between items-start">
+                                                                        <div>
+                                                                            <h5 className="font-bold text-gray-900">{p.name}</h5>
+                                                                            <p className="text-xs text-gray-500">{p.location}</p>
+                                                                        </div>
+                                                                        <span className="font-bold text-peach-accent">€{p.rent}</span>
+                                                                    </div>
+                                                                    <div className="mt-2 text-xs flex gap-2">
+                                                                        <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded">{p.status}</span>
+                                                                    </div>
+                                                                    <div className="absolute inset-0 bg-navy-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300 rounded">
+                                                                        <span className="text-white font-bold text-sm">Click to Apply</span>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Max Monthly Budget</label>
+                                                        <input type="number" placeholder="e.g. 800" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Housing Type</label>
+                                                        <select className="w-full p-3 border rounded bg-white text-gray-700 border-gray-200 focus:border-peach-accent outline-none">
+                                                            <option>Studio (Solo)</option>
+                                                            <option>Shared Apartment (Coloc)</option>
+                                                            <option>Student Residence</option>
+                                                            <option>Host Family</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Career & Lifestyle */}
+                                        {(services.jobs || services.mentorship) && (
+                                            <div className="pt-6 border-t border-gray-100 animate-fade-in">
+                                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">C</div> Career & Lifestyle</h3>
+                                                <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                                    {services.jobs && (
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Top 3 Job Skills</label>
+                                                            <input id="input-skills" defaultValue={profile?.skills || ''} type="text" placeholder="e.g. Python, Marketing, English C2" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none mb-2" />
+                                                        </div>
+                                                    )}
+                                                    {services.mentorship && (
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Hobbies & Interests</label>
+                                                            <input id="input-hobbies" defaultValue={profile?.hobbies || ''} type="text" placeholder="e.g. Cooking, Football, Cinema" className="w-full p-3 border rounded bg-white text-gray-900 border-gray-200 focus:border-peach-accent outline-none" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="pt-4 border-t border-gray-100">
+                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-peach-accent text-white flex items-center justify-center text-xs">4</div> Personal Statement</h3>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Background Narrative</label>
+                                            <p className="text-xs text-gray-400 mb-2">Tell us about your background, interests, and goals. This helps us match you for jobs, housing, and mentorship.</p>
+                                            <textarea id="input-bio" defaultValue={profile?.bio || ''} className="w-full p-4 border rounded bg-white border-gray-200 focus:border-peach-accent outline-none h-32" placeholder="I am a..."></textarea>
+                                        </div>
+
+                                        <div className="pt-4 flex justify-end">
+                                            <button id="btn-save-profile" onClick={saveProfile} className="bg-navy-primary text-white font-bold py-3 px-8 rounded shadow-lg hover:bg-navy-dark transition uppercase tracking-wide">Save Profile</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* STUDENT JOBS (New Tab) */}
+                        {/* STUDENT JOBS (Corporate AI Matching) */}
+                        {activeTab === 'jobs' && (
+                            <div className="animate-fade-in max-w-5xl mx-auto">
+                                <div className="flex flex-col md:flex-row justify-between items-end mb-8 border-b border-gray-100 pb-4">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-navy-primary mb-2">Corporate Career Matching</h2>
+                                        <p className="text-gray-500 text-sm">We connect you with internships & jobs from our <span className="font-bold text-navy-primary">Alora Talent Partners</span>.</p>
+                                    </div>
+                                    <div className="bg-blue-50 text-blue-800 px-4 py-2 rounded text-xs font-bold flex items-center gap-2">
+                                        <Icon name="sparkles" size={16} /> System Status: Finding Best Fits...
+                                    </div>
+                                </div>
+
+                                {/* CV UPLOAD SECTION */}
+                                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="font-bold text-navy-primary flex items-center gap-2"><Icon name="fileText" size={18} /> My Resume / CV</h3>
+                                        <p className="text-xs text-gray-500">Required for all applications.</p>
+                                    </div>
+                                    <div>
+                                        {docs.some(d => d.type === 'cv') ? (
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-green-600 text-sm font-bold flex items-center gap-1"><Icon name="checkCircle" size={16} /> CV Uploaded</span>
+                                                <a href={docs.find(d => d.type === 'cv').url} target="_blank" className="text-blue-600 text-xs hover:underline">View</a>
+                                                <button onClick={() => handleDelete(docs.find(d => d.type === 'cv').id)} className="text-red-400 hover:text-red-600"><Icon name="trash2" size={16} /></button>
+                                            </div>
+                                        ) : (
+                                            <label className="bg-navy-primary text-white px-4 py-2 rounded text-sm font-bold shadow hover:bg-navy-dark transition cursor-pointer flex items-center gap-2">
+                                                <Icon name="upload" size={14} /> Upload CV
+                                                <input type="file" className="hidden" accept=".pdf" onChange={(e) => handleCVUpload(e.target.files[0])} />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* JOB LIST */}
+                                <div className="space-y-4">
+                                    {/* Merging real jobs with backups */}
+                                    {(() => {
+                                        // 2. Static AI Suggestions (Backups)
+                                        const staticSuggestions = [
+                                            { title: 'Brand Ambassador', company: 'L\'Oréal Group', city: 'Paris (Remote Hybrid)', match: 98, type: 'Internship', tags: ['English Native', 'Social Media', 'Marketing'] },
+                                            { title: 'Tech Support Assoc.', company: 'Doctolib', city: 'Nantes', match: 95, type: 'Part-time', tags: ['English Fluent', 'Tech Savvy'] },
+                                            { title: 'English Tutor', company: 'Momji', city: 'Paris', match: 92, type: 'Part-time', tags: ['Teaching', 'English Native'] }
+                                        ];
+
+                                        // 3. Merge Real Jobs + Static
+                                        // Filter out duplicates if needed, for now just append
+                                        const displayJobs = [
+                                            ...realJobs.map(job => ({
+                                                ...job,
+                                                city: job.location || 'Paris',
+                                                match: Math.floor(Math.random() * (99 - 85) + 85), // Simulated Match Score
+                                                tags: [job.type, 'New Listing']
+                                            })),
+                                            ...staticSuggestions
+                                        ];
+
+                                        return displayJobs.map((job, i) => (
+                                            <div key={i} className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition relative group">
+                                                {/* Match Score Badge */}
+                                                <div className="absolute top-4 right-4 flex flex-col items-end">
+                                                    <span className={`text-2xl font-black ${job.match >= 90 ? 'text-green-500' : 'text-yellow-500'}`}>{job.match}%</span>
+                                                    <span className="text-[10px] font-bold uppercase text-gray-400">Match Confidence</span>
+                                                </div>
+
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <h4 className="font-bold text-lg text-navy-primary">{job.title}</h4>
+                                                        <p className="font-bold text-gray-600 text-sm mb-1">{job.company}</p>
+                                                        <p className="text-xs text-gray-400 flex items-center gap-1"><Icon name="mapPin" size={12} /> {job.city}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-2 mb-4">
+                                                    {job.tags && job.tags.map((tag, t) => (
+                                                        <span key={t} className="px-2 py-1 bg-gray-50 text-gray-600 text-[10px] font-bold uppercase rounded border border-gray-200">{tag}</span>
+                                                    ))}
+                                                </div>
+
+                                                <div className="flex items-center gap-3 pt-4 border-t border-gray-50">
+                                                    <button
+                                                        onClick={() => applyToJob(job)}
+                                                        // Disable if already applied (check id logic in saved jobs etc if we had it, for now just open)
+                                                        className="flex-1 bg-navy-primary text-white font-bold py-2 rounded text-sm hover:bg-navy-dark transition flex items-center justify-center gap-2"
+                                                    >
+                                                        Apply with Profile <Icon name="arrowRight" size={16} />
+                                                    </button>
+
+                                                    {/* SAVED JOB BUTTON */}
+                                                    <button
+                                                        onClick={() => toggleSaveJob(job)}
+                                                        className={`px-4 py-2 border font-bold rounded text-sm transition ${savedJobs.some(j => j.id === (job.title + job.company).replace(/[^a-zA-Z0-9]/g, '_'))
+                                                            ? 'bg-peach-accent text-white border-peach-accent'
+                                                            : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                                                            }`} // Dynamic styling based on saved state
+                                                    >
+                                                        {savedJobs.some(j => j.id === (job.title + job.company).replace(/[^a-zA-Z0-9]/g, '_')) ? 'Saved' : 'Save'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ));
+                                    })()}
+                                </div>
+
+                                <div className="mt-8 text-center bg-gray-50 p-6 rounded border border-dashed border-gray-300">
+                                    <h4 className="font-bold text-gray-600 mb-2">Want more matches?</h4>
+                                    <p className="text-sm text-gray-500 mb-4">Update your skill set in the Intake Form to trigger new AI recommendations.</p>
+                                    <button onClick={() => setActiveTab('intake')} className="text-peach-accent font-bold text-sm hover:underline">Edit Skills Profile</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 2. MY APPLICATIONS (Unified View) */}
+                        {activeTab === 'applications' && (
+                            <div className="animate-fade-in space-y-6 max-w-4xl mx-auto">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="font-bold text-navy-primary text-xl">Track All Applications</h2>
+                                    <div className="flex gap-2">
+                                        <span className="text-xs bg-navy-light text-navy-primary px-3 py-1 rounded-full font-bold">University</span>
+                                        <span className="text-xs bg-orange-50 text-peach-accent px-3 py-1 rounded-full font-bold">Housing</span>
+                                        <span className="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold">Jobs</span>
+                                    </div>
+                                </div>
+
+                                {allApplications.map(app => (
+                                    <div key={app.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
+                                        <div className={`px-6 py-4 border-b border-gray-100 flex justify-between items-center ${app.bgColor}`}>
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-8 h-8 rounded-full bg-white flex items-center justify-center ${app.color} shadow-sm`}>
+                                                    <Icon name={app.icon} size={16} />
+                                                </div>
+                                                <div>
+                                                    <h3 className={`font-bold text-sm md:text-base ${app.color}`}>{app.title}</h3>
+                                                    <p className="text-xs text-gray-500">{app.subtitle}</p>
+                                                </div>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${app.status === 'submitted' ? 'bg-green-100 text-green-700' :
+                                                app.status === 'review' ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-purple-100 text-purple-700'
+                                                }`}>
+                                                {app.statusLabel}
+                                            </span>
+                                        </div>
+                                        <div className="p-6">
+                                            <div className="relative">
+                                                <div className="flex gap-4 items-start">
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                                                        <div className="w-0.5 h-12 bg-gray-200"></div>
+                                                        <div className="w-3 h-3 rounded-full bg-navy-primary ring-4 ring-blue-50"></div>
+                                                    </div>
+                                                    <div className="pt-1">
+                                                        <h4 className="font-bold text-gray-900 text-sm">Latest Update</h4>
+                                                        <p className="text-sm text-gray-600 mt-1">{app.details}</p>
+                                                        <span className="text-xs text-gray-400 mt-2 block flex items-center gap-1">
+                                                            <Icon name="clock" size={12} /> {app.date}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="mt-6 flex justify-end">
+                                                <button
+                                                    onClick={() => handleWithdraw(app)}
+                                                    className="text-xs font-bold text-red-500 hover:text-red-700 flex items-center gap-1 border border-red-100 bg-red-50 px-3 py-1 rounded"
+                                                >
+                                                    <Icon name="x" size={12} /> Withdraw Application
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* 3. DOCUMENTS (Custom Uploads & Renaming) */}
+                        {activeTab === 'documents' && (
+                            <div className="animate-fade-in max-w-5xl mx-auto">
+                                <div className="flex flex-col md:flex-row gap-8">
+                                    {/* Upload Area */}
+                                    <div className="md:w-1/3">
+                                        <div className="bg-blue-50 border border-blue-100 p-6 rounded-lg mb-6">
+                                            <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2"><Icon name="uploadCloud" size={18} /> Add New Document</h4>
+                                            <p className="text-xs text-blue-700 mb-4">Upload PDFs or Images. Max 5MB.</p>
+
+                                            <input
+                                                type="text"
+                                                placeholder="Document Name (e.g. Portfolio)"
+                                                className="w-full p-2 mb-3 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-300 outline-none"
+                                                value={newDocName}
+                                                onChange={(e) => setNewDocName(e.target.value)}
+                                            />
+                                            <input
+                                                id="doc-upload-input"
+                                                type="file"
+                                                className="w-full text-xs text-blue-900 mb-4 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+                                                onChange={(e) => setSelectedFile(e.target.files[0])}
+                                            />
+                                            <button
+                                                onClick={uploadFile}
+                                                disabled={uploading}
+                                                className="w-full bg-blue-600 text-white font-bold py-2 rounded text-sm hover:bg-blue-700 transition disabled:opacity-50"
+                                            >
+                                                {uploading ? 'Uploading...' : 'Upload File'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* File List */}
+                                    <div className="md:w-2/3">
+                                        <h3 className="font-bold text-gray-800 mb-4">Your Vault</h3>
+                                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                            {docs.map(doc => (
+                                                <div key={doc.id} className="flex justify-between items-center p-4 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-10 h-10 rounded flex items-center justify-center ${doc.status === 'uploaded' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                                                            <Icon name={doc.type === 'standard' ? 'fileText' : 'folder'} size={20} />
+                                                        </div>
+                                                        <div>
+                                                            {/* User can see name, in a real app we'd make this editable inline */}
+                                                            {/* User can see name, in a real app we'd make this editable inline */}
+                                                            <a href={doc.url} target="_blank" rel="noopener noreferrer" className="font-bold text-gray-800 text-sm hover:text-blue-600 hover:underline flex items-center gap-2">
+                                                                {doc.name} <Icon name="externalLink" size={12} />
+                                                            </a>
+                                                            <div className="text-xs text-gray-500 uppercase tracking-wider">{doc.type} • {doc.status}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {/* Force Download Link */}
+                                                        <a
+                                                            href={doc.url && doc.url.includes('upload') ? doc.url.replace('upload/', 'upload/fl_attachment/') : doc.url}
+                                                            className="p-2 text-gray-400 hover:text-green-600 transition"
+                                                            title="Download"
+                                                            download
+                                                        >
+                                                            <Icon name="download" size={16} />
+                                                        </a>
+                                                        <button
+                                                            className="p-2 text-gray-400 hover:text-blue-600 transition"
+                                                            title="Rename"
+                                                            onClick={() => {
+                                                                const newName = prompt("Rename document:", doc.name);
+                                                                if (newName) handleRename(doc.id, newName);
+                                                            }}
+                                                        >
+                                                            <Icon name="edit2" size={16} />
+                                                        </button>
+                                                        <button
+                                                            className="p-2 text-gray-400 hover:text-red-500 transition"
+                                                            title="Delete"
+                                                            onClick={() => handleDelete(doc.id)}
+                                                        >
+                                                            <Icon name="trash2" size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {docs.length === 0 && <div className="p-8 text-center text-gray-400 italic">No documents uploaded yet.</div>}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 4. HOUSING (Unchanged) */}
+                        {activeTab === 'housing' && (
+                            <div className="animate-fade-in">
+                                {/* REAL PROPERTIES LIST */}
+                                <div className="mb-8">
+                                    <h3 className="font-bold text-navy-primary mb-4 flex items-center gap-2"><Icon name="home" /> Available Listings</h3>
+                                    {properties.length === 0 ? (
+                                        <p className="text-gray-400 text-sm italic">No properties listed yet.</p>
+                                    ) : (
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            {properties.map(p => (
+                                                <div key={p.id} className="bg-white border hover:border-peach-accent transition p-4 rounded shadow-sm relative group cursor-pointer"
+                                                    onClick={async () => {
+                                                        if (confirm(`Start application for ${p.name}?`)) {
+                                                            try {
+                                                                await window.db.collection('users').doc(user.uid).collection('applications').add({
+                                                                    type: 'housing',
+                                                                    title: p.name,
+                                                                    subtitle: p.location,
+                                                                    status: 'submitted',
+                                                                    statusLabel: 'Application Sent',
+                                                                    date: new Date().toLocaleDateString(),
+                                                                    icon: 'home',
+                                                                    color: 'text-peach-accent',
+                                                                    details: `Application for ${p.name} at €${p.rent}/mo.`,
+                                                                    createdAt: new Date().toISOString()
+                                                                });
+                                                                alert("Application Sent! Check 'My Applications'.");
+                                                            } catch (e) {
+                                                                console.error(e);
+                                                                alert("Error applying.");
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h5 className="font-bold text-gray-900">{p.name}</h5>
+                                                            <p className="text-xs text-gray-500">{p.location}</p>
+                                                        </div>
+                                                        <span className="font-bold text-peach-accent">€{p.rent}</span>
+                                                    </div>
+                                                    <div className="mt-2 text-xs flex gap-2">
+                                                        <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded">{p.status}</span>
+                                                    </div>
+                                                    <div className="absolute inset-0 bg-navy-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300 rounded">
+                                                        <span className="text-white font-bold text-sm">Click to Apply</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                {aiMatches?.housing && (
+                                    <div className="mb-8">
+                                        <h3 className="font-bold text-navy-primary mb-4 flex items-center gap-2">
+                                            <Icon name="sparkles" className="text-peach-accent" /> AI Recommended Housing
+                                        </h3>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            {aiMatches.housing.map(house => (
+                                                <div key={house.id} className="bg-white p-4 rounded border border-peach-accent shadow-sm hover:shadow-md transition cursor-pointer">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h4 className="font-bold text-gray-800">{house.title}</h4>
+                                                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded">{house.match}% Match</span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 flex items-center gap-1"><Icon name="mapPin" size={12} />{house.city}</p>
+                                                    <p className="text-peach-accent font-bold mt-2">{house.price}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {/* RENTAL PROFILE FORM (For AI Matcher) */}
+                                <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg mb-8">
+                                    <h3 className="text-lg font-bold text-navy-primary mb-4 flex items-center gap-2"><Icon name="home" size={20} /> Smart Application Kit</h3>
+                                    <p className="text-sm text-gray-600 mb-6">Our system analyzes your documents to match you with landlords who accept your profile. Upload everything relevant to increase your options.</p>
+
+                                    <div className="grid md:grid-cols-3 gap-6 mb-6">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Monthly Budget</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-3 text-gray-500">€</span>
+                                                <input
+                                                    type="number"
+                                                    placeholder="800"
+                                                    className="w-full pl-8 p-3 border rounded bg-white outline-none focus:border-peach-accent"
+                                                    value={housingProfile.budget}
+                                                    onChange={e => setHousingProfile({ ...housingProfile, budget: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Guarantor Status</label>
+                                            <select
+                                                className="w-full p-3 border rounded bg-white outline-none focus:border-peach-accent cursor-pointer"
+                                                value={housingProfile.guarantor}
+                                                onChange={e => setHousingProfile({ ...housingProfile, guarantor: e.target.value })}
+                                            >
+                                                <option>Visale (Recommended)</option>
+                                                <option>Garantme</option>
+                                                <option>French Guarantor</option>
+                                                <option>International Guarantor</option>
+                                                <option>None</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Current Location</label>
+                                            <select
+                                                className="w-full p-3 border rounded bg-white outline-none focus:border-peach-accent cursor-pointer"
+                                                value={housingProfile.location}
+                                                onChange={e => setHousingProfile({ ...housingProfile, location: e.target.value })}
+                                            >
+                                                <option>Abroad (Need Visa)</option>
+                                                <option>In France (Have Visa)</option>
+                                                <option>EU Citizen</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end mb-6">
+                                        <button onClick={saveHousingPreferences} className="bg-navy-primary text-white px-6 py-2 rounded text-sm font-bold shadow hover:bg-navy-dark transition">Update Preferences</button>
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded border border-blue-100">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h4 className="font-bold text-sm text-gray-800">Dossier Documents</h4>
+                                            <span className="text-xs text-gray-500">Flexible Layout for Variable Requirements</span>
+                                        </div>
+
+                                        {/* Dynamic Document Grid */}
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            {/* Core Docs - Always Visible */}
+                                            {['Passport / ID', 'Proof of Enrollment', 'Guarantor Letter', 'Bank Statement'].map((docName, i) => {
+                                                const existingDoc = docs.find(d => d.name === docName);
+                                                return (
+                                                    <div key={i} className={`flex justify-between items-center p-3 border rounded transition ${existingDoc ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50 hover:border-blue-300'}`}>
+                                                        <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                                            {docName}
+                                                            {existingDoc && <Icon name="check" size={14} className="text-green-600" />}
+                                                        </span>
+
+                                                        {existingDoc ? (
+                                                            <div className="flex gap-2">
+                                                                <a href={existingDoc.url} target="_blank" className="text-blue-600 hover:text-blue-800"><Icon name="eye" size={16} /></a>
+                                                                <button onClick={() => handleDelete(existingDoc.id)} className="text-red-400 hover:text-red-600"><Icon name="trash2" size={16} /></button>
+                                                            </div>
+                                                        ) : (
+                                                            <label className="cursor-pointer">
+                                                                <input
+                                                                    type="file"
+                                                                    className="hidden"
+                                                                    onChange={(e) => handleHousingUpload(e.target.files[0], docName)}
+                                                                />
+                                                                <Icon name="upload" size={16} className="text-gray-400 hover:text-blue-600" />
+                                                            </label>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {/* Flexible Slots */}
+                                            <div className="col-span-2 border-t border-gray-100 pt-4 mt-2">
+                                                <p className="text-xs text-blue-600 font-bold mb-3 uppercase tracking-wide">Additional / Optional Documents</p>
+                                                <div className="space-y-3">
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={extraDocName}
+                                                            onChange={(e) => setExtraDocName(e.target.value)}
+                                                            placeholder="Custom Document Name (e.g. Previous Rent Receipt)"
+                                                            className="flex-1 p-2 text-sm border border-gray-200 rounded focus:border-blue-400 outline-none"
+                                                        />
+                                                        <label className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold shadow hover:bg-blue-700 transition cursor-pointer flex items-center">
+                                                            Add
+                                                            <input
+                                                                type="file"
+                                                                className="hidden"
+                                                                onChange={(e) => handleExtraUpload(e.target.files[0])}
+                                                            />
+                                                        </label>
+                                                    </div>
+
+                                                    {/* List of Extra Docs */}
+                                                    {docs.filter(d => d.type === 'housing_extra').map(doc => (
+                                                        <div key={doc.id} className="flex justify-between items-center p-3 border border-green-200 bg-green-50 rounded">
+                                                            <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                                                {doc.name}
+                                                                <Icon name="check" size={14} className="text-green-600" />
+                                                            </span>
+                                                            <div className="flex gap-2">
+                                                                <a href={doc.url} target="_blank" className="text-blue-600 hover:text-blue-800"><Icon name="eye" size={16} /></a>
+                                                                <button onClick={() => handleDelete(doc.id)} className="text-red-400 hover:text-red-600"><Icon name="trash2" size={16} /></button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-bold text-navy-primary">Verified Student Housing</h2>
+                                    <button className="text-peach-accent font-bold text-sm flex items-center gap-1"><Icon name="filter" size={14} /> Filters</button>
+                                </div>
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {properties.length > 0 ? properties.slice(0, 2).map(p => (
+                                        <div key={p.id} className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden flex flex-col md:flex-row h-auto md:h-48 group cursor-pointer"
+                                            onClick={async () => {
+                                                if (confirm(`Request visit for ${p.name}?`)) {
+                                                    try {
+                                                        await window.db.collection('users').doc(user.uid).collection('applications').add({
+                                                            type: 'visit',
+                                                            title: p.name,
+                                                            subtitle: p.location,
+                                                            status: 'requested',
+                                                            statusLabel: 'Visit Requested',
+                                                            date: new Date().toLocaleDateString(),
+                                                            icon: 'key',
+                                                            color: 'text-peach-accent',
+                                                            details: `Visit requested for ${p.name}.`,
+                                                            createdAt: new Date().toISOString()
+                                                        });
+                                                        alert("Visit Request Sent! Check 'My Applications'.");
+                                                    } catch (e) {
+                                                        console.error(e);
+                                                        alert("Error requesting visit.");
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            <div className="w-full md:w-40 bg-gray-200 flex items-center justify-center text-gray-400">
+                                                <Icon name="image" size={24} />
+                                            </div>
+                                            <div className="p-4 flex flex-col justify-between flex-1">
+                                                <div>
+                                                    <div className="flex justify-between items-start">
+                                                        <h4 className="font-bold text-gray-900 line-clamp-1">{p.name || 'Property'}</h4>
+                                                        <span className="text-peach-accent font-bold">€{p.rent}/mo</span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Icon name="mapPin" size={12} /> {p.location || 'Paris'}</p>
+                                                    <div className="flex gap-2 mt-3">
+                                                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded uppercase font-bold">Verified Landlord</span>
+                                                        <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase font-bold">CAF Eligible</span>
+                                                    </div>
+                                                </div>
+                                                <button className="mt-3 w-full py-2 border border-navy-primary text-navy-primary text-xs font-bold uppercase rounded hover:bg-navy-primary hover:text-white transition group-hover:bg-navy-primary group-hover:text-white">Request Visit</button>
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        <p className="text-gray-400 italic">No verified listings available at the moment.</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+
+
+                        {/* 6. MENTORSHIP (Real System) */}
+                        {activeTab === 'mentorship' && (
+                            <div className="animate-fade-in max-w-5xl mx-auto">
+                                <h2 className="text-2xl font-bold text-navy-primary mb-4">My Mentorship</h2>
+
+                                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                                        <Icon name="penTool" /> Pending Contracts
+                                    </h3>
+                                    {mentorshipRequests.length === 0 ? (
+                                        <div className="text-center py-8">
+                                            <div className="w-16 h-16 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <Icon name="users" size={32} />
+                                            </div>
+                                            <p className="text-gray-500 font-bold">No active mentorship requests.</p>
+                                            <p className="text-sm text-gray-400">Mentors will contact you based on your profile.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {mentorshipRequests.map(req => (
+                                                <div key={req.id} className="border border-blue-200 bg-blue-50 p-6 rounded-lg flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
+                                                    <div>
+                                                        <h4 className="font-bold text-navy-primary text-lg mb-1">Mentorship Request from {req.mentorId || 'Alora Mentor'}</h4>
+                                                        <p className="text-sm text-gray-600 mb-2">The mentor has reviewed your profile and wants to connect.</p>
+                                                        <div className="flex gap-2">
+                                                            <span className="bg-white border border-blue-200 text-blue-800 px-3 py-1 rounded text-xs font-bold uppercase tracking-wide">{req.status}</span>
+                                                            <span className="text-xs text-gray-400 flex items-center gap-1"><Icon name="clock" size={12} /> {new Date(req.createdAt).toLocaleDateString()}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {req.status === 'Pending Signature' && (
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (confirm("Sign this mentorship contract?")) {
+                                                                    await window.db.collection('mentorship_requests').doc(req.id).update({ status: 'Active (Signed)' });
+                                                                    alert("Contract Signed! Mentorship is now Active.");
+                                                                }
+                                                            }}
+                                                            className="bg-green-600 text-white font-bold py-3 px-6 rounded shadow hover:bg-green-700 transition flex items-center gap-2"
+                                                        >
+                                                            <Icon name="penTool" size={16} /> Sign Contract
+                                                        </button>
+                                                    )}
+
+                                                    {req.status.includes('Active') && (
+                                                        <div className="bg-green-100 text-green-800 px-6 py-3 rounded font-bold flex items-center gap-2 border border-green-200">
+                                                            <Icon name="checkCircle" size={20} /> Active Mentorship
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-8 bg-purple-50 border border-purple-100 p-6 rounded-lg">
+                                    <h3 className="font-bold text-purple-900 mb-2">What happens next?</h3>
+                                    <p className="text-sm text-purple-800">Once you sign, you will be connected with your mentor via email to schedule your first meeting. Alora tracks your progress to ensure a successful integration.</p>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+                </div>
+            );
+        };
+
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null, errorInfo: null };
+            }
+
+            static getDerivedStateFromError(error) {
+                return { hasError: true };
+            }
+
+            componentDidCatch(error, errorInfo) {
+                this.setState({ error, errorInfo });
+                console.error("ErrorBoundary caught an error", error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div className="p-8 text-center">
+                            <h2 className="text-xl font-bold text-red-600 mb-4">Something went wrong.</h2>
+                            <details className="text-left bg-gray-100 p-4 rounded whitespace-pre-wrap text-xs font-mono text-red-800">
+                                {this.state.error && this.state.error.toString()}
+                                <br />
+                                {this.state.errorInfo && this.state.errorInfo.componentStack}
+                            </details>
+                        </div>
+                    );
+                }
+                return this.props.children;
+            }
+        }
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [profile, setProfile] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            React.useEffect(() => {
+                const unsubscribeAuth = window.auth.onAuthStateChanged(async (u) => {
+                    if (u) {
+                        setUser(u);
+                        if (window.db) {
+                            // Real-time listener for User Profile
+                            const unsubscribeProfile = window.db.collection('users').doc(u.uid)
+                                .onSnapshot(doc => {
+                                    if (doc.exists) {
+                                        setProfile(doc.data());
+                                    }
+                                    setLoading(false);
+                                }, err => {
+                                    console.error("Error fetching profile:", err);
+                                    setLoading(false);
+                                });
+
+                            // Cleanup profile listener when auth changes or component unmounts
+                            return () => unsubscribeProfile();
+                        }
+                    } else {
+                        // Optional: Redirect to login if sensitive
+                        window.location.href = 'login.html';
+                        setLoading(false);
+                    }
+                });
+                return () => unsubscribeAuth();
+            }, []);
+
+            if (loading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-primary"></div></div>;
+
+            return (
+                <ErrorBoundary>
+                    <div>
+                        <NavBar user={user} profile={profile} />
+                        <Dashboard user={user} profile={profile} />
+                    </div>
+                </ErrorBoundary>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>

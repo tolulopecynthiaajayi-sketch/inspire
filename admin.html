@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal | Alora Group</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="./js/firebaseConfig.js"></script>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #F8FAFC;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .nav-link {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .bg-navy-primary {
+            background-color: #1E3A8A;
+        }
+
+        .bg-navy-dark {
+            background-color: #0F172A;
+        }
+
+        .text-navy-primary {
+            color: #1E3A8A;
+        }
+
+        .bg-peach-accent {
+            background-color: #D9654C;
+        }
+
+        .text-peach-accent {
+            color: #D9654C;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        .animate-pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const iconName = name.charAt(0).toUpperCase() + name.slice(1);
+            if (!window.lucide || !window.lucide.icons || !window.lucide.icons[iconName]) return null;
+            const iconDef = window.lucide.icons[iconName];
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {iconDef.map((child, index) => React.createElement(child[0], { ...child[1], key: index }))}
+                </svg>
+            );
+        };
+
+        const NavBar = () => (
+            <nav className="bg-navy-dark text-white shadow-md sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="flex justify-between h-20 items-center">
+                        <div className="flex items-center gap-3">
+                            <a href="index.html">
+                                <img src="logo.png" alt="Alora" className="h-12 w-auto object-contain filter invert mix-blend-screen" />
+                            </a>
+                            <span className="font-bold text-white text-lg tracking-wider border-l border-gray-600 pl-4 ml-2">COUNSELOR PORTAL</span>
+                        </div>
+
+
+
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="hidden md:inline text-gray-300">Admin: Lara A.</span>
+                            </div>
+                            <div className="w-8 h-8 bg-peach-accent rounded-full flex items-center justify-center font-bold text-xs">LA</div>
+                            <button
+                                onClick={() => {
+                                    if (confirm('Are you sure you want to logout?')) {
+                                        sessionStorage.removeItem('isAdmin');
+                                        window.location.href = 'admin-login.html';
+                                    }
+                                }}
+                                className="text-xs text-red-400 hover:text-white border border-red-400 hover:border-white px-3 py-1 rounded transition ml-2"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        );
+
+        const Dashboard = () => {
+            const [selectedStudent, setSelectedStudent] = useState(null);
+            const [isSearching, setIsSearching] = useState(false);
+            const [searchResults, setSearchResults] = useState(null);
+            const [scanText, setScanText] = useState('Initializing Deep Web Scanner...');
+
+            const [activeTab, setActiveTab] = useState('intakes');
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+            // 1. Live Intake Data (Firestore)
+            const [intakes, setIntakes] = useState([]);
+
+            // 2. Mock Property Data
+            const properties = [
+                { id: 1, title: 'Studio Montmartre', landlord: 'Pierre D.', price: '€950', location: '18th Arr.', status: 'Pending Verification' },
+                { id: 2, title: '2BR Le Marais', landlord: 'Pierre D.', price: '€1800', location: '4th Arr.', status: 'Active' }
+            ];
+
+            // 3. Mock Job Data
+            const jobs = [
+                { id: 1, title: 'Marketing Intern', company: 'TechCorp', type: 'Remote', status: 'Pending Approval' },
+                { id: 2, title: 'Junior Developer', company: 'TechCorp', type: 'Paris', status: 'Active' }
+            ];
+
+            // 4. Mock Mentorship Data
+            const families = [
+                { id: 1, name: 'The Dubois Family', location: 'Lyon', status: 'Verified' },
+                { id: 2, name: 'Sophie & Marc', location: 'Paris', status: 'Pending Verification' }
+            ];
+
+            const [autoMatchData, setAutoMatchData] = useState(null);
+            const [activeApps, setActiveApps] = useState([]);
+
+            // AUTH CHECK
+            useEffect(() => {
+                const isAdmin = sessionStorage.getItem('isAdmin');
+                if (!isAdmin) {
+                    window.location.href = 'admin-login.html';
+                } else {
+                    setIsAuthenticated(true);
+                }
+            }, []);
+
+            // DATA FETCHING HOOKS
+            useEffect(() => {
+                if (!window.db) return;
+                const unsubscribe = window.db.collection('users')
+                    .where('role', '==', 'student')
+                    .onSnapshot(snapshot => {
+                        const loadedStudents = snapshot.docs.map(doc => {
+                            const data = doc.data();
+                            return {
+                                id: doc.id,
+                                name: data.name || 'Anonymous Applicant',
+                                origin: data.housing?.location?.includes('France') ? 'In France' : 'International',
+                                gpa: data.education?.level || 'N/A',
+                                degree: data.degree || 'Prospective Student',
+                                preferences: [
+                                    data.education?.course1 || 'Undecided',
+                                    data.education?.course2,
+                                    data.education?.course3
+                                ].filter(Boolean),
+                                english: 'Native',
+                                french: 'A2',
+                                status: 'New',
+                                date: data.createdAt ? new Date(data.createdAt.seconds * 1000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                            };
+                        });
+                        setIntakes(loadedStudents);
+                    }, error => console.error("Error fetching intakes:", error));
+                return () => unsubscribe();
+            }, []);
+
+            // AUTO-FETCH MATCHES
+            useEffect(() => {
+                if (!selectedStudent || !window.db) return;
+                // Reset state
+                setSearchResults(null);
+                setAutoMatchData(null);
+                setIsSearching(false);
+                // Check for matches
+                const unsubscribe = window.db.collection('users').doc(selectedStudent.id)
+                    .collection('ai_matches').doc('latest')
+                    .onSnapshot(doc => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            setAutoMatchData(data);
+                            if (data.schools && data.schools.length > 0) {
+                                setSearchResults(data.schools);
+                            }
+                        }
+                    });
+                return () => unsubscribe();
+            }, [selectedStudent]);
+
+            // Active Applications Listener
+            useEffect(() => {
+                if (!selectedStudent || !window.db) return;
+                const unsubscribe = window.db.collection('users').doc(selectedStudent.id).collection('applications')
+                    .orderBy('createdAt', 'desc')
+                    .onSnapshot(snapshot => {
+                        setActiveApps(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                    }, err => console.log("No apps found or error", err));
+                return () => unsubscribe();
+            }, [selectedStudent]);
+
+            // CONDITIONAL RENDER MUST BE AFTER HOOKS
+            if (!isAuthenticated) return null; // Or a loading spinner
+
+
+            const runPearchBot = () => {
+                // Manual Override
+                setIsSearching(true);
+                setSearchResults(null);
+                setScanText('Initializing Deep Web Scanner...');
+
+                // Dynamic Scan Text Animation
+                const scanMessages = [
+                    "Accessing Global University Database...",
+                    "Scanning 'Campus France' portals...",
+                    "Crawling 'Masters Portal' directories...",
+                    "Deep Scanning: Eastern European Technical Institutes...",
+                    "Deep Scanning: Nordic Innovation Hubs...",
+                    "Filtering: English-Taught Programs...",
+                    "Filtering: Tuition under €15k...",
+                    "Analyzing Curriculum Match...",
+                    "Finalizing Report..."
+                ];
+
+                let msgIndex = 0;
+                const interval = setInterval(() => {
+                    if (msgIndex < scanMessages.length) {
+                        setScanText(scanMessages[msgIndex]);
+                        msgIndex++;
+                    }
+                }, 600);
+
+                // Deep Database of Real "Hidden Gem" Programs
+                const deepDatabase = [
+                    // Estonia (High Tech, Low Cost)
+                    { id: 201, school: 'Tallinn University of Technology (TalTech)', program: 'MSc in Cyber Security', city: 'Tallinn, Estonia', link: 'https://taltech.ee/en', language: 'English', tuition: '€6,000/yr', match: 96 },
+                    { id: 202, school: 'University of Tartu', program: 'MSc in Software Engineering', city: 'Tartu, Estonia', link: 'https://ut.ee/en', language: 'English', tuition: '€6,000/yr', match: 94 },
+
+                    // Poland (Very Affordable)
+                    { id: 301, school: 'Wroclaw Uni. of Science & Tech', program: 'MSc in Applied Computer Science', city: 'Wroclaw, Poland', link: 'https://pwr.edu.pl/en/', language: 'English', tuition: '€3,700/yr', match: 92 },
+                    { id: 302, school: 'University of Silesia', program: 'MSc in Computer Science (Applied)', city: 'Katowice, Poland', link: 'https://us.edu.pl/en/', language: 'English', tuition: '€800/yr', match: 89 },
+
+                    // Portugal (Warm, Tech Hubs)
+                    { id: 401, school: 'Instituto Superior Técnico', program: 'MSc in Data Science & Eng.', city: 'Lisbon, Portugal', link: 'https://tecnico.ulisboa.pt/en/', language: 'English', tuition: '€1,063/yr', match: 95 },
+                    { id: 402, school: 'University of Porto', program: 'Master in Informatics Engineering', city: 'Porto, Portugal', link: 'https://sigarra.up.pt', language: 'English', tuition: '€2,000/yr', match: 91 },
+
+                    // France (Niche/Specific)
+                    { id: 101, school: 'Emlyon Business School', program: 'MSc in Digital Marketing', city: 'Lyon, France', link: 'https://em-lyon.com', language: 'English', tuition: '€24,000/yr', match: 88 },
+                    { id: 105, school: 'EURECOM', program: 'Master in Digital Security', city: 'Sophia Antipolis, France', link: 'https://www.eurecom.fr', language: 'English', tuition: '€6,000/yr', match: 97 },
+
+                    // Germany (No Tuition)
+                    { id: 501, school: 'Technical University of Munich', program: 'MSc in Informatics', city: 'Munich, Germany', link: 'https://tum.de', language: 'English', tuition: '€0 (Fees only)', match: 99 },
+                ];
+
+                // Simulate processing time
+                setTimeout(async () => {
+                    clearInterval(interval);
+                    setIsSearching(false);
+                    // Return random 4 results for variety + always 1 high match
+                    const randomResults = deepDatabase.sort(() => 0.5 - Math.random()).slice(0, 4).sort((a, b) => b.match - a.match);
+
+                    // SAVE TO FIRESTORE (Persistence)
+                    if (window.db && selectedStudent) {
+                        await window.db.collection('users').doc(selectedStudent.id).collection('ai_matches').doc('latest').set({
+                            schools: randomResults,
+                            timestamp: new Date().toISOString(),
+                            status: 'completed'
+                        });
+                        // No need to set searchResults manually, the Effect will pick it up
+                    } else {
+                        setSearchResults(randomResults);
+                    }
+                }, 5500); // 5.5s search for "Deep" feel
+            };
+
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    {/* Tabs */}
+                    <div className="flex gap-4 border-b border-gray-200 mb-8">
+                        {['intakes', 'housing', 'jobs', 'mentorship', 'settings'].map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`pb-3 px-4 text-sm font-bold uppercase tracking-wide transition ${activeTab === tab ? 'text-navy-primary border-b-2 border-navy-primary' : 'text-gray-400 hover:text-navy-primary'}`}
+                            >
+                                {tab === 'intakes' ? 'Student Intakes' : tab === 'housing' ? 'Property Approvals' : tab === 'jobs' ? 'Job Board' : tab === 'mentorship' ? 'Mentorships' : 'Settings'}
+                            </button>
+                        ))}
+                    </div>
+
+                    {activeTab === 'intakes' && (
+                        <div className="flex flex-col lg:flex-row gap-8 min-h-[600px]">
+
+                            {/* LEFT: Intake Queue */}
+                            <div className="w-full lg:w-1/3 space-y-4">
+                                <h2 className="font-bold text-xl text-navy-primary mb-4 flex items-center gap-2">
+                                    <Icon name="inbox" /> Student Intakes
+                                </h2>
+                                {intakes.map(student => (
+                                    <div
+                                        key={student.id}
+                                        onClick={() => { setSelectedStudent(student); setSearchResults(null); }}
+                                        className={`p-4 rounded-lg cursor-pointer border transition hover:shadow-md ${selectedStudent?.id === student.id ? 'bg-white border-peach-accent shadow-md' : 'bg-white border-gray-200 hover:border-blue-300'}`}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-bold text-gray-800">{student.name}</h3>
+                                            {student.status === 'New' && <span className="bg-peach-accent text-white text-[10px] px-2 py-1 rounded-full font-bold uppercase">New</span>}
+                                        </div>
+                                        <p className="text-sm text-gray-600 mb-1">{student.degree}</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {student.preferences.slice(0, 2).map((p, i) => (
+                                                <span key={i} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{p}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* RIGHT: Detail & Work Area */}
+                            <div className="w-full lg:w-2/3">
+                                {selectedStudent ? (
+                                    <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-h-full">
+                                        {/* Header */}
+                                        <div className="bg-navy-dark p-6 text-white flex justify-between items-start">
+                                            <div>
+                                                <h2 className="text-2xl font-bold mb-1">{selectedStudent.name}</h2>
+                                                <p className="opacity-80 text-sm flex items-center gap-4">
+                                                    <span><Icon name="mapPin" size={14} className="inline mr-1" /> {selectedStudent.origin}</span>
+                                                    <span><Icon name="graduationCap" size={14} className="inline mr-1" /> GPA: {selectedStudent.gpa}</span>
+                                                </p>
+                                            </div>
+                                            <div className="text-right text-xs opacity-70">
+                                                ID: #{selectedStudent.id}2024
+                                            </div>
+                                        </div>
+
+                                        {/* Action Bar */}
+                                        <div className="p-6 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                            <div className="text-sm text-gray-600">
+                                                {autoMatchData ? (
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="flex items-center gap-2 text-green-700 font-bold bg-green-50 px-3 py-1 rounded border border-green-200">
+                                                            <Icon name="checkCircle" size={16} /> Matches Saved
+                                                            <span className="text-xs text-green-600 font-normal opacity-75">Auto</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={runPearchBot}
+                                                            disabled={isSearching}
+                                                            className="text-xs text-navy-primary font-bold flex items-center gap-1 hover:underline"
+                                                        >
+                                                            <Icon name="refreshCw" size={12} /> Re-run Search
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <span><strong>Goal:</strong> Seeking {selectedStudent.degree.includes('BSc') ? 'Master\'s' : 'Bachelor'} programs in France.</span>
+                                                )}
+                                            </div>
+                                            {!searchResults && !isSearching && !autoMatchData && (
+                                                <button
+                                                    onClick={runPearchBot}
+                                                    className="bg-navy-primary text-white px-6 py-2 rounded shadow hover:bg-navy-dark transition font-bold flex items-center gap-2 animate-pulse"
+                                                >
+                                                    <Icon name="sparkles" size={18} /> Run AI Study Matcher
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Searching State */}
+                                        {isSearching && (
+                                            <div className="p-12 flex flex-col items-center justify-center text-center">
+                                                <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
+                                                    <div className="absolute inset-0 bg-peach-accent rounded-full opacity-20 animate-pulse-ring"></div>
+                                                    <div className="relative bg-white p-4 rounded-full shadow-lg border-2 border-peach-accent text-peach-accent">
+                                                        <Icon name="globe" size={32} className="animate-spin-slow" />
+                                                    </div>
+                                                </div>
+                                                <h3 className="text-xl font-bold text-navy-primary mb-2">AI Agent is Scouring Databases...</h3>
+                                                <p className="text-gray-500 max-w-md font-mono text-xs">{scanText}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Results State */}
+                                        {/* Results State */}
+                                        {searchResults && (
+                                            <div className="p-6 animate-fade-in">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                                                        <Icon name="checkCircle" className="text-green-500" /> AI Found 3 Matches
+                                                    </h3>
+                                                    <button className="text-sm text-navy-primary hover:underline">Download Report</button>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    {searchResults.map((result, i) => (
+                                                        <div key={result.id} className="border border-gray-200 rounded-lg p-5 hover:border-peach-accent transition group relative">
+                                                            <div className="absolute top-4 right-4 text-green-600 font-bold text-xl">{result.match}%</div>
+                                                            <h4 className="font-bold text-navy-primary text-lg mb-1">{result.program}</h4>
+                                                            <p className="text-gray-600 font-semibold mb-2">{result.school}, {result.city}</p>
+                                                            <div className="flex gap-4 text-xs text-gray-500 mb-4">
+                                                                <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">Language: {result.language}</span>
+                                                                <span className="bg-gray-100 px-2 py-1 rounded">Tuition: €12k/yr</span>
+                                                            </div>
+                                                            <div className="flex gap-3">
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        if (!confirm(`Submit application for ${selectedStudent.name} to ${result.school}?`)) return;
+                                                                        try {
+                                                                            await window.db.collection('users').doc(selectedStudent.id).collection('applications').add({
+                                                                                type: 'university',
+                                                                                title: result.program,
+                                                                                subtitle: result.school,
+                                                                                status: 'submitted',
+                                                                                statusLabel: 'Submitted by Counselor',
+                                                                                date: new Date().toLocaleDateString(),
+                                                                                icon: 'graduationCap',
+                                                                                color: 'text-navy-primary',
+                                                                                bgColor: 'bg-navy-light',
+                                                                                details: 'Application initiated by counselor.',
+                                                                                createdAt: new Date().toISOString()
+                                                                            });
+                                                                            alert("Application Submitted to Student Portal! ✅");
+                                                                        } catch (e) {
+                                                                            console.error(e);
+                                                                            alert("Error submitting application");
+                                                                        }
+                                                                    }}
+                                                                    className="bg-navy-primary text-white px-4 py-2 rounded text-sm font-bold hover:bg-navy-dark flex-1"
+                                                                >
+                                                                    Select for Application
+                                                                </button>
+                                                                <a href="#" className="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm font-bold hover:bg-gray-50 text-center">View Details</a>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Empty State / Initial View */}
+                                        {!searchResults && !isSearching && (
+                                            <div className="p-8">
+                                                <h4 className="font-bold text-gray-700 mb-4">Intake Details</h4>
+                                                <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm mb-8">
+                                                    <div>
+                                                        <span className="block text-gray-400 text-xs uppercase">Languages</span>
+                                                        <span className="font-semibold text-gray-800">English ({selectedStudent.english}), French ({selectedStudent.french})</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-gray-400 text-xs uppercase">Course Preferences</span>
+                                                        <ul className="list-disc pl-4 text-gray-800">
+                                                            {selectedStudent.preferences.map(p => <li key={p}>{p}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+
+                                                {/* ACTIVE APPLICATIONS LIST */}
+                                                <div>
+                                                    <h4 className="font-bold text-navy-primary mb-3 flex items-center gap-2">
+                                                        <Icon name="briefcase" size={16} /> Current Applications ({activeApps.length})
+                                                    </h4>
+                                                    {activeApps.length === 0 ? (
+                                                        <p className="text-gray-400 text-sm italic">No active applications found.</p>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            {activeApps.map(app => (
+                                                                <div key={app.id} className="bg-blue-50 border border-blue-100 p-3 rounded flex justify-between items-center">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-navy-primary shadow-sm">
+                                                                            <Icon name={app.icon || 'fileText'} size={14} />
+                                                                        </div>
+                                                                        <div>
+                                                                            <h5 className="font-bold text-gray-800 text-sm">{app.title}</h5>
+                                                                            <p className="text-xs text-gray-500">{app.subtitle}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">{app.statusLabel || app.status}</span>
+                                                                        <p className="text-[10px] text-gray-400 mt-1">{app.date}</p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="h-full flex items-center justify-center text-gray-400 bg-white rounded-lg border border-dashed border-gray-300 min-h-[400px]">
+                                        <div className="text-center">
+                                            <Icon name="arrowLeft" className="mx-auto mb-2 opacity-50" />
+                                            <p>Select a student to review</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* HOUSING APPROVALS */}
+                    {activeTab === 'housing' && (
+                        <div className="animate-fade-in">
+                            <h2 className="font-bold text-xl text-navy-primary mb-6 flex items-center gap-2"><Icon name="home" /> Property Verification Queue</h2>
+                            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+                                <table className="w-full text-left text-sm text-gray-600">
+                                    <thead className="bg-gray-50 uppercase text-xs font-bold text-gray-500 border-b border-gray-200">
+                                        <tr>
+                                            <th className="p-4">Property</th>
+                                            <th className="p-4">Landlord</th>
+                                            <th className="p-4">Price</th>
+                                            <th className="p-4">Location</th>
+                                            <th className="p-4">Status</th>
+                                            <th className="p-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {properties.map(p => (
+                                            <tr key={p.id} className="hover:bg-gray-50">
+                                                <td className="p-4 font-bold text-gray-800">{p.title}</td>
+                                                <td className="p-4">{p.landlord}</td>
+                                                <td className="p-4 text-peach-accent font-bold">{p.price}</td>
+                                                <td className="p-4">{p.location}</td>
+                                                <td className="p-4">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${p.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{p.status}</span>
+                                                </td>
+                                                <td className="p-4 text-right">
+                                                    <button className="text-green-600 hover:text-green-800 font-bold mr-3">Verify</button>
+                                                    <button className="text-red-500 hover:text-red-700 font-bold">Reject</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* JOB APPROVALS */}
+                    {activeTab === 'jobs' && (
+                        <div className="animate-fade-in">
+                            <h2 className="font-bold text-xl text-navy-primary mb-6 flex items-center gap-2"><Icon name="briefcase" /> Job Postings Review</h2>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {jobs.map(job => (
+                                    <div key={job.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center">
+                                        <div>
+                                            <h4 className="font-bold text-lg text-navy-primary">{job.title}</h4>
+                                            <p className="text-sm text-gray-500 mb-2">{job.company} • {job.type}</p>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${job.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{job.status}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <button className="bg-green-50 text-green-700 border border-green-200 px-4 py-2 rounded text-xs font-bold uppercase hover:bg-green-600 hover:text-white transition">Approve</button>
+                                            <button className="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded text-xs font-bold uppercase hover:bg-red-600 hover:text-white transition">Flag</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MENTORSHIP APPROVALS */}
+                    {activeTab === 'mentorship' && (
+                        <div className="animate-fade-in">
+                            <h2 className="font-bold text-xl text-navy-primary mb-6 flex items-center gap-2"><Icon name="users" /> Host Family Vetting</h2>
+                            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+                                <table className="w-full text-left text-sm text-gray-600">
+                                    <thead className="bg-gray-50 uppercase text-xs font-bold text-gray-500 border-b border-gray-200">
+                                        <tr>
+                                            <th className="p-4">Family Name</th>
+                                            <th className="p-4">Location</th>
+                                            <th className="p-4">Home Visit Status</th>
+                                            <th className="p-4">Background Check</th>
+                                            <th className="p-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {families.map(f => (
+                                            <tr key={f.id} className="hover:bg-gray-50">
+                                                <td className="p-4 font-bold text-gray-800">{f.name}</td>
+                                                <td className="p-4">{f.location}</td>
+                                                <td className="p-4"><span className="text-green-600 font-bold flex items-center gap-1"><Icon name="check" size={14} /> Completed</span></td>
+                                                <td className="p-4"><span className="text-gray-400 italic">Pending</span></td>
+                                                <td className="p-4 text-right">
+                                                    <button className="bg-navy-primary text-white px-3 py-1 rounded text-xs font-bold uppercase hover:bg-navy-dark">Vetter Dashboard</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SETTINGS - CHANGE PASSWORD */}
+                    {activeTab === 'settings' && (
+                        <div className="animate-fade-in max-w-xl">
+                            <h2 className="font-bold text-xl text-navy-primary mb-6 flex items-center gap-2"><Icon name="lock" /> Admin Security Settings</h2>
+                            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                                <h3 className="font-bold text-lg mb-4 text-gray-800">Change Admin Password</h3>
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const newPass = e.target.newPassword.value;
+                                    const confirmPass = e.target.confirmPassword.value;
+                                    if (newPass === confirmPass && newPass.length > 0) {
+                                        localStorage.setItem('adminPassword', newPass);
+                                        alert('Password updated successfully! Please log in with your new password.');
+                                        sessionStorage.removeItem('isAdmin'); // Force re-login
+                                        window.location.href = 'login.html';
+                                    } else {
+                                        alert('Passwords do not match or are empty.');
+                                    }
+                                }}>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">New Password</label>
+                                            <input name="newPassword" type="password" className="w-full p-3 border rounded border-gray-200 outline-none focus:border-navy-primary" placeholder="Enter new password" required />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Confirm Password</label>
+                                            <input name="confirmPassword" type="password" className="w-full p-3 border rounded border-gray-200 outline-none focus:border-navy-primary" placeholder="Confirm new password" required />
+                                        </div>
+                                        <div className="pt-4">
+                                            <button type="submit" className="bg-peach-accent text-white font-bold py-3 px-6 rounded hover:bg-orange-700 transition w-full uppercase tracking-wide">Update Password</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const App = () => (
+            <div>
+                <NavBar />
+                <Dashboard />
+            </div>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
