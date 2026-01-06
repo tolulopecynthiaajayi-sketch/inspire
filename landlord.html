@@ -102,10 +102,11 @@
             const [listings, setListings] = useState([]);
             const [selectedProperty, setSelectedProperty] = useState('');
 
-            // Fetch Real Properties
+            // Fetch Real Properties (Filtered by Landlord)
             React.useEffect(() => {
-                if (!window.db) return;
+                if (!window.db || !user) return;
                 const unsubscribe = window.db.collection('properties')
+                    .where('landlordId', '==', user.uid)
                     .onSnapshot(snapshot => {
                         const fetchedProps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setListings(fetchedProps);
@@ -115,7 +116,7 @@
                         }
                     }, err => console.error("Error fetching properties", err));
                 return () => unsubscribe();
-            }, []);
+            }, [user]);
 
             // Add Property Form State
             const [newProperty, setNewProperty] = useState({ name: '', location: '', rent: '', status: 'Vacant' });
@@ -126,7 +127,7 @@
                     await window.db.collection('properties').add({
                         ...newProperty,
                         rent: parseInt(newProperty.rent),
-                        landlordId: 'landlord_1', // Mock ID for now
+                        landlordId: user.uid, // Real User ID from Auth
                         createdAt: new Date().toISOString()
                     });
                     alert("Property Listed Successfully! 🏠");

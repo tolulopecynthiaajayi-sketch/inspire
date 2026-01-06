@@ -601,10 +601,11 @@
             const [properties, setProperties] = useState([]);
             const [mentorshipRequests, setMentorshipRequests] = useState([]);
 
-            // Listen for Real Properties
+            // Listen for Real Properties (Available Only)
             React.useEffect(() => {
                 if (!window.db) return;
                 const unsubscribe = window.db.collection('properties')
+                    .where('status', '==', 'Vacant')
                     .onSnapshot(snapshot => {
                         const props = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setProperties(props);
