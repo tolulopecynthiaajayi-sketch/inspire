@@ -1494,6 +1494,10 @@
                                                                 studentName: profile?.name || user.displayName || 'Student',
                                                                 origin: profile?.housing?.location || 'International',
                                                                 program: profile?.degree || 'Student',
+                                                                // ENRICHED DATA FOR MENTORS
+                                                                bio: profile?.bio || "International student eager to learn about French culture and daily life.",
+                                                                languages: profile?.languages ? Object.keys(profile.languages).join(', ') : 'English, French (Learning)',
+                                                                interests: [profile?.education?.course1, 'Culture', 'Travel'].filter(Boolean),
                                                                 status: 'Requested',
                                                                 createdAt: new Date().toISOString()
                                                             });
