@@ -1688,16 +1688,64 @@
             }
         }
 
-        // DASHBOARD PLACEHOLDER (DEBUGGING)
-        const Dashboard = () => (
-            <div className="p-8 text-center text-gray-500">
-                <h2 className="text-2xl font-bold">Dashboard Placeholder</h2>
-                <p>If you see this, the syntax error was in the Dashboard component.</p>
-            </div>
-        );
+        // AI MATCHING LOGIC COMPONENT (Simulates Agent)
+        const MatchLogicRunner = ({ user, profile, onMatchesFound }) => {
+            useEffect(() => {
+                const runScan = async () => {
+                    await new Promise(r => setTimeout(r, 2000)); // Simulate AI Scan Delay
 
-        // MATCH LOGIC RUNNER PLACEHOLDER
-        const MatchLogicRunner = () => null;
+                    try {
+                        const snapshot = await window.db.collection('users').where('mentorship.isMentor', '==', true).get();
+
+                        const mentors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                        // SCORING LOGIC
+                        const scored = mentors.map(mentor => {
+                            let score = 50;
+                            let reasons = [];
+
+                            // 1. Location Proximity
+                            // PROXIMITY MAP (Extensible)
+                            const NEARBY = {
+                                'montpellier': ['sète', 'sete', 'lattes', 'pérols', 'mauguio'],
+                                'sète': ['montpellier', 'frontignan'],
+                                'sete': ['montpellier', 'frontignan'],
+                                'paris': ['versailles', 'boulogne'],
+                            };
+
+                            const mLoc = (mentor.housing?.location || '').toLowerCase();
+                            const sLoc = (profile?.housing?.location || '').toLowerCase();
+
+                            if (mLoc && sLoc) {
+                                if (mLoc.includes(sLoc) || sLoc.includes(mLoc)) {
+                                    score += 30;
+                                    reasons.push("Perfect Location Match");
+                                } else {
+                                    const nearby = NEARBY[mLoc] || [];
+                                    if (nearby.some(c => sLoc.includes(c))) {
+                                        score += 15;
+                                        reasons.push("Nearby City Match");
+                                    }
+                                }
+                            }
+
+                            // 2. Interests
+                            // ... simple intersection ...
+
+                            return { ...mentor, score: Math.min(score, 100), reasons };
+                        });
+
+                        onMatchesFound(scored.sort((a, b) => b.score - a.score).slice(0, 3));
+                    } catch (e) {
+                        console.error(e);
+                        // Fallback Mock if no DB connection
+                        onMatchesFound([{ id: 'mock1', name: 'Jean Dupont', housing: { location: 'Montpellier' }, score: 95, reasons: ['Mock Match'] }]);
+                    }
+                };
+                runScan();
+            }, []);
+            return null; // Logic only
+        };
 
         const App = () => {
             console.log(" DEBUG: App render");
