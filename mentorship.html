@@ -164,10 +164,30 @@
                 }
 
                 // 2. Location/Origin Synergy
+                // 2. Location/Origin Synergy with Proximity
                 if (mentor.housing?.location && student.origin) {
-                    if (student.origin.toLowerCase().includes(mentor.housing.location.toLowerCase())) {
-                        score += 20;
-                        reasons.push(`Located in same area: ${mentor.housing.location}`);
+                    const mLoc = mentor.housing.location.toLowerCase().trim();
+                    const sLoc = student.origin.toLowerCase().trim();
+
+                    // PROXIMITY MAP (Extensible)
+                    const NEARBY = {
+                        'montpellier': ['sète', 'sete', 'lattes', 'pérols', 'mauguio'],
+                        'sète': ['montpellier', 'frontignan'],
+                        'sete': ['montpellier', 'frontignan'],
+                        'paris': ['versailles', 'boulogne', 'saint-denis'],
+                        'lyon': ['villeurbanne', 'bron']
+                    };
+
+                    if (sLoc.includes(mLoc) || mLoc.includes(sLoc)) {
+                        score += 30; // EXACT MATCH (High Value)
+                        reasons.push(`Perfect Location Match: ${mentor.housing.location}`);
+                    } else {
+                        // Check Proximity
+                        const nearbyCities = NEARBY[mLoc] || [];
+                        if (nearbyCities.some(city => sLoc.includes(city))) {
+                            score += 15; // PROXIMITY MATCH
+                            reasons.push(`Nearby Location Match: ${student.origin} is close to ${mentor.housing.location}`);
+                        }
                     }
                 }
 
@@ -217,15 +237,15 @@
 
             // Fetch My Agreements
             useEffect(() => {
-                if (!window.db) return;
-                // Mocking current user ID as 'mentor_1' for now
-                const unsubscribe = window.db.collection('mentorship_requests').where('mentorId', '==', 'mentor_1')
+                if (!window.db || !user) return;
+
+                const unsubscribe = window.db.collection('mentorship_requests').where('mentorId', '==', user.uid)
                     .onSnapshot(snapshot => {
                         const ags = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setAgreements(ags);
                     });
                 return () => unsubscribe();
-            }, []);
+            }, [user]);
 
             // Handle Save Profile
             const handleSaveProfile = async (e) => {
@@ -252,10 +272,29 @@
 
             const handleSignAndSend = async () => {
                 try {
+                    // 1. CAPACTIY CHECK
+                    const currentActive = agreements.filter(a => a.status.includes('Signed') || a.status.includes('Active')).length;
+                    const maxCapacity = profile?.mentorship?.capacity || 3;
+
+                    if (currentActive >= maxCapacity) {
+                        alert(`Capacity Limit Reached! You can only mentor ${maxCapacity} students at a time.`);
+                        return;
+                    }
+
+                    // 2. AVAILABILITY CHECK
+                    if (selectedMentee.status !== 'Requested') {
+                        alert("This student already has a pending offer or active mentor.");
+                        return;
+                    }
+
                     // Update the EXISTING request instead of creating a new one
                     await window.db.collection('mentorship_requests').doc(selectedMentee.id).update({
                         mentorId: user.uid, // REAL ID
                         mentorName: profile?.name || 'Alora Mentor',
+                        // STAMP PROFILE DATA FOR STUDENT TO REVIEW
+                        mentorBio: profile?.bio || 'Experienced local mentor.',
+                        mentorLocation: profile?.housing?.location || 'France',
+                        mentorInterests: profile?.interests || [],
                         status: 'Signed by Mentor',
                         signedAt: new Date().toISOString()
                     });

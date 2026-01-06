@@ -1518,27 +1518,56 @@
                                             {mentorshipRequests.map(req => (
                                                 <div key={req.id} className="border border-blue-200 bg-blue-50 p-6 rounded-lg flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
                                                     <div>
-                                                        <h4 className="font-bold text-navy-primary text-lg mb-1">Mentorship Request from {req.mentorId || 'Alora Mentor'}</h4>
-                                                        <p className="text-sm text-gray-600 mb-2">The mentor has reviewed your profile and wants to connect.</p>
+                                                        <h4 className="font-bold text-navy-primary text-lg mb-1">Mentorship Offer from {req.mentorName || 'Alora Mentor'}</h4>
+
+                                                        {/* MENTOR PROFILE PREVIEW */}
+                                                        {req.mentorBio && (
+                                                            <div className="mb-3 bg-white p-3 rounded border border-blue-100">
+                                                                <p className="text-xs text-gray-700 italic border-l-2 border-purple-300 pl-2 mb-2">"{req.mentorBio}"</p>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {(req.mentorInterests || []).map((tag, i) => (
+                                                                        <span key={i} className="text-[10px] bg-purple-100 text-purple-700 px-1.5 rounded">{tag}</span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <p className="text-sm text-gray-400 mb-2 flex items-center gap-1">
+                                                            <Icon name="mapPin" size={12} /> {req.mentorLocation || 'France'}
+                                                        </p>
+
                                                         <div className="flex gap-2">
                                                             <span className="bg-white border border-blue-200 text-blue-800 px-3 py-1 rounded text-xs font-bold uppercase tracking-wide">|{req.status}|</span>
                                                             <span className="text-xs text-gray-400 flex items-center gap-1"><Icon name="clock" size={12} /> {new Date(req.createdAt).toLocaleDateString()}</span>
                                                         </div>
                                                     </div>
 
-                                                    {/* Show Sign Button if status contains 'Signed' but NOT 'Active' yet */}
+                                                    {/* Show Action Buttons if status contains 'Signed' but NOT 'Active' yet */}
                                                     {req.status && req.status.includes('Signed') && !req.status.includes('Active') && (
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (confirm("Sign this mentorship contract?")) {
-                                                                    await window.db.collection('mentorship_requests').doc(req.id).update({ status: 'Active (Signed)' });
-                                                                    alert("Contract Signed! Mentorship is now Active.");
-                                                                }
-                                                            }}
-                                                            className="bg-green-600 text-white font-bold py-3 px-6 rounded shadow hover:bg-green-700 transition flex items-center gap-2"
-                                                        >
-                                                            <Icon name="penTool" size={16} /> Sign Contract
-                                                        </button>
+                                                        <div className="flex flex-col gap-2">
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (confirm("Accept this mentor and sign the contract?")) {
+                                                                        await window.db.collection('mentorship_requests').doc(req.id).update({ status: 'Active (Signed)' });
+                                                                        alert("Contract Signed! Mentorship is now Active.");
+                                                                    }
+                                                                }}
+                                                                className="bg-green-600 text-white font-bold py-2 px-6 rounded shadow hover:bg-green-700 transition flex items-center justify-center gap-2 text-sm"
+                                                            >
+                                                                <Icon name="check" size={16} /> Accept & Sign
+                                                            </button>
+
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (confirm("Reject this mentorship offer?")) {
+                                                                        await window.db.collection('mentorship_requests').doc(req.id).update({ status: 'Rejected' });
+                                                                    }
+                                                                }}
+                                                                className="bg-red-50 text-red-600 border border-red-200 font-bold py-2 px-6 rounded hover:bg-red-100 transition flex items-center justify-center gap-2 text-sm"
+                                                            >
+                                                                <Icon name="x" size={16} /> Reject
+                                                            </button>
+                                                        </div>
                                                     )}
 
                                                     {req.status && req.status.includes('Active') && (
