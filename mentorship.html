@@ -561,6 +561,7 @@
             const [profile, setProfile] = useState(null);
             const [loading, setLoading] = useState(true);
 
+            useEffect(() => {
                 const unsubscribe = window.auth.onAuthStateChanged(async (u) => {
                     if (u) {
                         setUser(u);

@@ -1758,38 +1758,43 @@
                 window.isMatching = matchingState; // Hack for inline render access above
 
                 useEffect(() => {
+                    let unsubscribeProfile;
+                    let unsubscribeRequests;
+
                     const unsubscribeAuth = window.auth.onAuthStateChanged(async (u) => {
                         if (u) {
                             setUser(u);
+                            setLoading(false); // Ensure app renders even if DB lags
+
                             if (window.db) {
                                 // Real-time listener for User Profile
-                                const unsubscribeProfile = window.db.collection('users').doc(u.uid)
+                                unsubscribeProfile = window.db.collection('users').doc(u.uid)
                                     .onSnapshot(doc => {
                                         if (doc.exists) {
                                             setProfile(doc.data());
                                         }
-                                        setLoading(false);
-                                    }, err => {
-                                        console.error("Error fetching profile:", err);
-                                        setLoading(false);
-                                    });
+                                    }, err => console.error("Error fetching profile:", err));
 
                                 // Listen for Mentorship Requests
-                                const unsubscribeRequests = window.db.collection('mentorship_requests')
+                                unsubscribeRequests = window.db.collection('mentorship_requests')
                                     .where('studentId', '==', u.uid)
                                     .onSnapshot(snapshot => {
                                         setMentorshipRequests(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
                                     });
-
-                                return () => { unsubscribeProfile(); unsubscribeRequests(); };
                             }
                         } else {
-                            // Optional: Redirect to login if sensitive
+                            // Redirect to login
                             window.location.href = 'login.html';
                             setLoading(false);
                         }
                     });
-                    return () => unsubscribeAuth();
+
+                    // Proper Cleanup
+                    return () => {
+                        unsubscribeAuth();
+                        if (unsubscribeProfile) unsubscribeProfile();
+                        if (unsubscribeRequests) unsubscribeRequests();
+                    };
                 }, []);
 
                 if (loading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div></div>;
