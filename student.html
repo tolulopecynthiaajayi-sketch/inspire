@@ -1478,9 +1478,36 @@
                                             <div className="w-16 h-16 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                                 <Icon name="users" size={32} />
                                             </div>
-                                            <p className="text-gray-500 font-bold">No active mentorship requests.</p>
-                                            <p className="text-sm text-gray-400">Mentors will contact you based on your profile.</p>
-                                        </div>
+                                            <div className="bg-white p-8 rounded-lg border border-dashed border-gray-300 flex flex-col items-center justify-center text-center">
+                                                <div className="bg-purple-100 text-purple-600 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                                                    <Icon name="users" size={32} />
+                                                </div>
+                                                <h4 className="text-lg font-bold text-gray-900 mb-2">Find Your French Mentor</h4>
+                                                <p className="text-sm text-gray-500 mb-6 max-w-sm">Connect with a local family or mentor to help you navigate life in France. Request a match to get started.</p>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (confirm("Request a mentorship match?")) {
+                                                            try {
+                                                                await window.db.collection('mentorship_requests').add({
+                                                                    studentId: user.uid,
+                                                                    studentName: profile?.name || user.displayName || 'Student',
+                                                                    origin: profile?.housing?.location || 'International',
+                                                                    program: profile?.degree || 'Student',
+                                                                    status: 'Requested',
+                                                                    createdAt: new Date().toISOString()
+                                                                });
+                                                                alert("Mentorship Requested! Waiting for a match...");
+                                                            } catch (e) {
+                                                                console.error(e);
+                                                                alert("Error sending request.");
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="bg-purple-600 text-white font-bold py-3 px-8 rounded-lg shadow hover:bg-purple-700 transition flex items-center gap-2"
+                                                >
+                                                    <Icon name="sparkles" size={16} /> Request a Mentor
+                                                </button>
+                                            </div>
                                     ) : (
                                         <div className="space-y-4">
                                             {mentorshipRequests.map(req => (
@@ -1489,24 +1516,25 @@
                                                         <h4 className="font-bold text-navy-primary text-lg mb-1">Mentorship Request from {req.mentorId || 'Alora Mentor'}</h4>
                                                         <p className="text-sm text-gray-600 mb-2">The mentor has reviewed your profile and wants to connect.</p>
                                                         <div className="flex gap-2">
-                                                            <span className="bg-white border border-blue-200 text-blue-800 px-3 py-1 rounded text-xs font-bold uppercase tracking-wide">{req.status}</span>
-                                                            <span className="text-xs text-gray-400 flex items-center gap-1"><Icon name="clock" size={12} /> {new Date(req.createdAt).toLocaleDateString()}</span>
-                                                        </div>
+                                                        <span className="bg-white border border-blue-200 text-blue-800 px-3 py-1 rounded text-xs font-bold uppercase tracking-wide">|{req.status}|</span>
+                                                        <span className="text-xs text-gray-400 flex items-center gap-1"><Icon name="clock" size={12} /> {new Date(req.createdAt).toLocaleDateString()}</span>
                                                     </div>
+                                                </div>
 
-                                                    {req.status === 'Pending Signature' && (
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (confirm("Sign this mentorship contract?")) {
-                                                                    await window.db.collection('mentorship_requests').doc(req.id).update({ status: 'Active (Signed)' });
-                                                                    alert("Contract Signed! Mentorship is now Active.");
-                                                                }
-                                                            }}
-                                                            className="bg-green-600 text-white font-bold py-3 px-6 rounded shadow hover:bg-green-700 transition flex items-center gap-2"
-                                                        >
-                                                            <Icon name="penTool" size={16} /> Sign Contract
-                                                        </button>
-                                                    )}
+                                                {/* Show Sign Button if status contains 'Signed' but NOT 'Active' yet */}
+                                                {req.status && req.status.includes('Signed') && !req.status.includes('Active') && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (confirm("Sign this mentorship contract?")) {
+                                                                await window.db.collection('mentorship_requests').doc(req.id).update({ status: 'Active (Signed)' });
+                                                                alert("Contract Signed! Mentorship is now Active.");
+                                                            }
+                                                        }}
+                                                        className="bg-green-600 text-white font-bold py-3 px-6 rounded shadow hover:bg-green-700 transition flex items-center gap-2"
+                                                    >
+                                                        <Icon name="penTool" size={16} /> Sign Contract
+                                                    </button>
+                                                )}
 
                                                     {req.status.includes('Active') && (
                                                         <div className="bg-green-100 text-green-800 px-6 py-3 rounded font-bold flex items-center gap-2 border border-green-200">
@@ -1526,63 +1554,63 @@
                             </div>
                         )}
 
-                    </div>
+                            </div>
                 </div>
-            );
+                    );
         };
 
-        class ErrorBoundary extends React.Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null, errorInfo: null };
+                    class ErrorBoundary extends React.Component {
+                        constructor(props) {
+                        super(props);
+                    this.state = {hasError: false, error: null, errorInfo: null };
             }
 
-            static getDerivedStateFromError(error) {
-                return { hasError: true };
+                    static getDerivedStateFromError(error) {
+                return {hasError: true };
             }
 
-            componentDidCatch(error, errorInfo) {
-                this.setState({ error, errorInfo });
-                console.error("ErrorBoundary caught an error", error, errorInfo);
+                    componentDidCatch(error, errorInfo) {
+                        this.setState({ error, errorInfo });
+                    console.error("ErrorBoundary caught an error", error, errorInfo);
             }
 
-            render() {
+                    render() {
                 if (this.state.hasError) {
                     return (
-                        <div className="p-8 text-center">
-                            <h2 className="text-xl font-bold text-red-600 mb-4">Something went wrong.</h2>
-                            <details className="text-left bg-gray-100 p-4 rounded whitespace-pre-wrap text-xs font-mono text-red-800">
-                                {this.state.error && this.state.error.toString()}
-                                <br />
-                                {this.state.errorInfo && this.state.errorInfo.componentStack}
-                            </details>
-                        </div>
+                    <div className="p-8 text-center">
+                        <h2 className="text-xl font-bold text-red-600 mb-4">Something went wrong.</h2>
+                        <details className="text-left bg-gray-100 p-4 rounded whitespace-pre-wrap text-xs font-mono text-red-800">
+                            {this.state.error && this.state.error.toString()}
+                            <br />
+                            {this.state.errorInfo && this.state.errorInfo.componentStack}
+                        </details>
+                    </div>
                     );
                 }
-                return this.props.children;
+                    return this.props.children;
             }
         }
 
         const App = () => {
             const [user, setUser] = useState(null);
-            const [profile, setProfile] = useState(null);
-            const [loading, setLoading] = useState(true);
+                    const [profile, setProfile] = useState(null);
+                    const [loading, setLoading] = useState(true);
 
             React.useEffect(() => {
                 const unsubscribeAuth = window.auth.onAuthStateChanged(async (u) => {
                     if (u) {
                         setUser(u);
-                        if (window.db) {
+                    if (window.db) {
                             // Real-time listener for User Profile
                             const unsubscribeProfile = window.db.collection('users').doc(u.uid)
                                 .onSnapshot(doc => {
                                     if (doc.exists) {
-                                        setProfile(doc.data());
+                        setProfile(doc.data());
                                     }
-                                    setLoading(false);
+                    setLoading(false);
                                 }, err => {
-                                    console.error("Error fetching profile:", err);
-                                    setLoading(false);
+                        console.error("Error fetching profile:", err);
+                    setLoading(false);
                                 });
 
                             // Cleanup profile listener when auth changes or component unmounts
@@ -1591,26 +1619,26 @@
                     } else {
                         // Optional: Redirect to login if sensitive
                         window.location.href = 'login.html';
-                        setLoading(false);
+                    setLoading(false);
                     }
                 });
                 return () => unsubscribeAuth();
             }, []);
 
-            if (loading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-primary"></div></div>;
+                    if (loading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-primary"></div></div>;
 
-            return (
-                <ErrorBoundary>
-                    <div>
-                        <NavBar user={user} profile={profile} />
-                        <Dashboard user={user} profile={profile} />
-                    </div>
-                </ErrorBoundary>
-            );
+                    return (
+                    <ErrorBoundary>
+                        <div>
+                            <NavBar user={user} profile={profile} />
+                            <Dashboard user={user} profile={profile} />
+                        </div>
+                    </ErrorBoundary>
+                    );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+                    const root = ReactDOM.createRoot(document.getElementById('root'));
+                    root.render(<App />);
     </script>
 </body>
 
