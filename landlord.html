@@ -97,7 +97,7 @@
             </nav>
         );
 
-        const Dashboard = () => {
+        const Dashboard = ({ user }) => {
             const [activeTab, setActiveTab] = useState('tenants');
             const [listings, setListings] = useState([]);
             const [selectedProperty, setSelectedProperty] = useState('');
@@ -385,12 +385,28 @@
             );
         };
 
-        const App = () => (
-            <div>
-                <NavBar />
-                <Dashboard />
-            </div>
-        );
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            React.useEffect(() => {
+                const unsubscribe = window.auth.onAuthStateChanged(u => {
+                    setUser(u);
+                    setLoading(false);
+                    if (!u) window.location.href = 'login.html?role=landlord';
+                });
+                return () => unsubscribe();
+            }, []);
+
+            if (loading) return <div className="h-screen flex items-center justify-center text-navy-primary">Loading...</div>;
+
+            return (
+                <div>
+                    <NavBar />
+                    <Dashboard user={user} />
+                </div>
+            );
+        };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
