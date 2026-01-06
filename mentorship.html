@@ -146,22 +146,74 @@
                 }
             }, [profile]);
 
-            // Fetch Real Mentorship Requests (Incoming from Students)
+            // AI MATCHING AGENT logic
+            const calculateMatchScore = (student, mentor) => {
+                if (!mentor) return { score: 0, reasons: [] };
+
+                let score = 50; // Base score
+                let reasons = [];
+
+                // 1. Interest Matching
+                const studentInterests = (student.interests || []).map(s => s.toLowerCase());
+                const mentorInterests = (mentor.interests || []).map(s => s.toLowerCase());
+
+                const commonInterests = studentInterests.filter(i => mentorInterests.some(m => m.includes(i) || i.includes(m)));
+                if (commonInterests.length > 0) {
+                    score += (commonInterests.length * 15);
+                    reasons.push(`Shared interests: ${commonInterests.join(', ')}`);
+                }
+
+                // 2. Location/Origin Synergy
+                if (mentor.housing?.location && student.origin) {
+                    if (student.origin.toLowerCase().includes(mentor.housing.location.toLowerCase())) {
+                        score += 20;
+                        reasons.push(`Located in same area: ${mentor.housing.location}`);
+                    }
+                }
+
+                // 3. Language Matching (Simple check)
+                if (student.languages && mentor.bio) {
+                    // Very basic NLP: Check if student's language appears in mentor's bio
+                    const langs = student.languages.split(',').map(l => l.trim().toLowerCase());
+                    const bio = mentor.bio.toLowerCase();
+                    if (langs.some(l => bio.includes(l))) {
+                        score += 10;
+                        reasons.push("Language compatibility detected");
+                    }
+                }
+
+                return {
+                    score: Math.min(score, 100), // Cap at 100
+                    reasons
+                };
+            };
+
+            // Fetch & Match Requests
             useEffect(() => {
                 if (!window.db) return;
+
                 const unsubscribe = window.db.collection('mentorship_requests')
                     .orderBy('createdAt', 'desc')
                     .onSnapshot(snapshot => {
-                        const requests = snapshot.docs.map(doc => ({
-                            id: doc.id,
-                            ...doc.data(),
-                            name: doc.data().studentName || 'Unknown Student',
-                            matchScore: Math.floor(Math.random() * (98 - 75 + 1) + 75)
-                        }));
-                        setMentees(requests);
+                        const requests = snapshot.docs.map(doc => {
+                            const data = doc.data();
+                            // Run AI Match
+                            const analysis = calculateMatchScore(data, profile);
+
+                            return {
+                                id: doc.id,
+                                ...data,
+                                name: data.studentName || 'Unknown Student',
+                                matchScore: analysis.score,
+                                matchReasons: analysis.reasons
+                            };
+                        });
+
+                        // Sort by Match Score (Highest First)
+                        setMentees(requests.sort((a, b) => b.matchScore - a.matchScore));
                     });
                 return () => unsubscribe();
-            }, []);
+            }, [profile]); // Re-run when profile loads
 
             // Fetch My Agreements
             useEffect(() => {
@@ -327,8 +379,15 @@
                                 {mentees.map(mentee => (
                                     <div key={mentee.id} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-xl transition group">
                                         <div className="h-20 bg-gradient-to-r from-blue-600 to-navy-primary relative">
-                                            <div className="absolute top-4 right-4 bg-white/20 backdrop-blur px-2 py-1 rounded text-white text-xs font-bold">
-                                                {mentee.matchScore}% Compatibility
+                                            <div className="absolute top-4 right-4 text-right">
+                                                <div className="bg-white/90 backdrop-blur px-2 py-1 rounded text-navy-primary text-xs font-bold shadow-sm">
+                                                    {mentee.matchScore}% Match
+                                                </div>
+                                                {mentee.matchReasons && mentee.matchReasons.length > 0 && (
+                                                    <div className="text-[10px] text-white font-bold mt-1 bg-black/30 px-2 py-0.5 rounded backdrop-blur">
+                                                        {mentee.matchReasons[0]}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="px-6 pb-6 relative">
