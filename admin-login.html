@@ -158,8 +158,22 @@
                 try {
                      userCredential = await window.auth.signInWithEmailAndPassword(email, password);
                 } catch (loginErr) {
-                    if (loginErr.code === 'auth/user-not-found') {
-                        throw new Error("Admin account not found.");
+                    if (loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential') {
+                        // AUTO-PROVISION THE ADMIN ACCOUNT SINCE DB WAS WIPED
+                        if (email === 'admin@alora.com' || email === 'admin@alora.dev') {
+                            try {
+                                userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
+                                await window.db.collection('users').doc(userCredential.user.uid).set({
+                                    email: email,
+                                    role: 'admin',
+                                    name: 'Lara Admin'
+                                });
+                            } catch (e) {
+                                throw e;
+                            }
+                        } else {
+                             throw new Error("Admin account not found.");
+                        }
                     } else {
                         throw loginErr;
                     }

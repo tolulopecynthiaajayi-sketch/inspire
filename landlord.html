@@ -73,7 +73,7 @@
             );
         };
 
-        const NavBar = () => (
+        const NavBar = ({ user }) => (
             <nav className="bg-navy-dark text-white shadow-md sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex justify-between h-20 items-center">
@@ -83,14 +83,11 @@
                             </a>
                             <span className="font-bold text-white text-lg tracking-wider border-l border-gray-600 pl-4 ml-2">LANDLORD SUITE</span>
                         </div>
-
-
-
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2 text-sm">
-                                <span className="hidden md:inline text-gray-300">Welcome, Pierre</span>
+                                <span className="hidden md:inline text-gray-300">Welcome, {user?.displayName || 'Landlord'}</span>
                             </div>
-                            <button className="bg-peach-accent px-4 py-2 rounded text-xs font-bold uppercase tracking-wide hover:bg-white hover:text-navy-primary transition">List Property</button>
+                            <button onClick={() => window.dispatchEvent(new Event('openAddListing'))} className="bg-peach-accent px-4 py-2 rounded text-xs font-bold uppercase tracking-wide hover:bg-white hover:text-navy-primary transition">List Property</button>
                         </div>
                     </div>
                 </div>
@@ -101,6 +98,12 @@
             const [activeTab, setActiveTab] = useState('tenants');
             const [listings, setListings] = useState([]);
             const [selectedProperty, setSelectedProperty] = useState('');
+
+            React.useEffect(() => {
+                const handler = () => setActiveTab('add-property');
+                window.addEventListener('openAddListing', handler);
+                return () => window.removeEventListener('openAddListing', handler);
+            }, []);
 
             // Fetch Real Properties (Filtered by Landlord)
             React.useEffect(() => {
@@ -204,19 +207,19 @@
                     <div className="grid md:grid-cols-4 gap-6 mb-8">
                         <div className="bg-white p-5 rounded shadow border-l-4 border-navy-primary">
                             <h4 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Total Listings</h4>
-                            <p className="text-3xl font-bold text-navy-dark">12</p>
+                            <p className="text-3xl font-bold text-navy-dark">{listings.length}</p>
                         </div>
                         <div className="bg-white p-5 rounded shadow border-l-4 border-green-500">
                             <h4 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Occupancy Rate</h4>
-                            <p className="text-3xl font-bold text-navy-dark">92%</p>
+                            <p className="text-3xl font-bold text-navy-dark">{listings.length > 0 ? Math.round((listings.filter(p => p.status === 'Occupied').length / listings.length) * 100) : 0}%</p>
                         </div>
                         <div className="bg-white p-5 rounded shadow border-l-4 border-peach-accent">
                             <h4 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Pending Requests</h4>
-                            <p className="text-3xl font-bold text-navy-dark">5</p>
+                            <p className="text-3xl font-bold text-navy-dark">0</p>
                         </div>
                         <div className="bg-white p-5 rounded shadow border-l-4 border-purple-500">
                             <h4 className="text-gray-500 text-xs font-bold uppercase tracking-wider">This Month Revenue</h4>
-                            <p className="text-3xl font-bold text-navy-dark">€8,450</p>
+                            <p className="text-3xl font-bold text-navy-dark">€{listings.reduce((sum, p) => p.status === 'Occupied' ? sum + Number(p.rent || 0) : sum, 0).toLocaleString()}</p>
                         </div>
                     </div>
 
@@ -402,7 +405,7 @@
 
             return (
                 <div>
-                    <NavBar />
+                    <NavBar user={user} />
                     <Dashboard user={user} />
                 </div>
             );

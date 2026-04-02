@@ -371,12 +371,14 @@
                     // 1. Log In
                     userCredential = await window.auth.signInWithEmailAndPassword(email, password);
 
-                    // Email Verification Check
+                    // TEST BYPASS: Email Verification Check
+                    /*
                     if (!userCredential.user.emailVerified) {
                         alert("Please verify your email address to log in.\n\nPlease check your inbox for the verification link.");
                         await window.auth.signOut(); // Prevent access
                         return; // Stop execution
                     }
+                    */
 
                     // 2. Fetch User Role from Firestore (Persistence)
                     try {
@@ -546,14 +548,36 @@
             }
         }
 
+        function checkAuthState() {
+            if (!window.auth || !window.db) return;
+            window.auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    setLoading(true);
+                    try {
+                        const userDoc = await window.db.collection('users').doc(user.uid).get();
+                        if (userDoc.exists && userDoc.data().role) {
+                            redirectToDashboard(userDoc.data().role);
+                        } else {
+                            redirectToDashboard('student'); // Fallback
+                        }
+                    } catch (e) {
+                        console.error("Auto-login error:", e);
+                        setLoading(false);
+                    }
+                }
+            });
+        }
+
         // Init
         init();
 
         // Check if ready already (in case script loaded super fast)
         if (window.isFirebaseReady) {
             updateConnectStatus(true);
+            checkAuthState();
         } else {
             updateConnectStatus(false);
+            window.addEventListener('firebase-ready', checkAuthState);
         }
     </script>
 

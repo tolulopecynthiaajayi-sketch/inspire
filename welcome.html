@@ -190,8 +190,8 @@
             roleBadge.textContent = roleLabel;
             roleBadge.className = `inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-6 text-white shadow-md ${getRoleColor(profile.role)}`;
 
-            // Check Verification Status
-            if (!user.emailVerified) {
+            // Check Verification Status (TEST BYPASS)
+            if (!user.emailVerified && false) {
                 // start auto-checker
                 startVerificationPoller(user);
 

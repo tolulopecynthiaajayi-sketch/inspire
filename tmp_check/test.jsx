@@ -1,0 +1,514 @@
+        const { useState, useEffect } = React;
+
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const iconName = name.charAt(0).toUpperCase() + name.slice(1);
+            if (!window.lucide || !window.lucide.icons || !window.lucide.icons[iconName]) return null;
+            const iconDef = window.lucide.icons[iconName];
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {iconDef.map((child, index) => React.createElement(child[0], { ...child[1], key: index }))}
+                </svg>
+            );
+        };
+
+        // SHARED NAVIGATION BAR for accessibility across portals
+        const NavBar = () => (
+            <nav className="bg-navy-dark text-white shadow-md sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="flex justify-between h-20 items-center">
+                        <div className="flex items-center gap-3">
+                            <a href="index.html">
+                                <img src="logo.png" alt="Alora" className="h-12 w-auto object-contain filter invert mix-blend-screen" />
+                            </a>
+                            <span className="font-bold text-white text-lg tracking-wider border-l border-gray-600 pl-4 ml-2 uppercase">Host Family Portal</span>
+                        </div>
+
+
+
+                        <div className="flex items-center gap-4">
+                            <a href="#" className="flex items-center gap-2 text-peach-accent text-sm font-bold uppercase hover:text-white transition">
+                                <Icon name="logOut" size={16} /> Sign Out
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        );
+
+        const Dashboard = ({ user, profile }) => {
+            const [activeTab, setActiveTab] = useState('matches');
+            const [showContractModal, setShowContractModal] = useState(false);
+            const [selectedMentee, setSelectedMentee] = useState(null);
+            const [mentees, setMentees] = useState([]);
+            const [agreements, setAgreements] = useState([]);
+
+            // Form State
+            const [formData, setFormData] = useState({
+                name: profile?.name || '',
+                location: profile?.housing?.location || '',
+                bio: profile?.bio || '',
+                capacity: profile?.mentorship?.capacity || 1,
+                interests: profile?.interests ? profile.interests.join(', ') : ''
+            });
+
+            // Update form when profile loads
+            useEffect(() => {
+                if (profile) {
+                    setFormData({
+                        name: profile.name || '',
+                        location: profile.housing?.location || '',
+                        bio: profile.bio || '',
+                        capacity: profile.mentorship?.capacity || 1,
+                        interests: profile.interests ? profile.interests.join(', ') : ''
+                    });
+                }
+            }, [profile]);
+
+            // SYSTEM MATCHING LOGIC
+            const calculateMatchScore = (student, mentor) => {
+                if (!mentor) return { score: 0, reasons: [] };
+
+                let score = 50; // Base score
+                let reasons = [];
+
+                // 1. Interest Matching
+                const studentInterests = (student.interests || []).map(s => s.toLowerCase());
+                const mentorInterests = (mentor.interests || []).map(s => s.toLowerCase());
+
+                const commonInterests = studentInterests.filter(i => mentorInterests.some(m => m.includes(i) || i.includes(m)));
+                if (commonInterests.length > 0) {
+                    score += (commonInterests.length * 15);
+                    reasons.push(`Shared interests: ${commonInterests.join(', ')}`);
+                }
+
+                // 2. Location/Origin Synergy
+                // 2. Location/Origin Synergy with Proximity
+                if (mentor.housing?.location && student.origin) {
+                    const mLoc = mentor.housing.location.toLowerCase().trim();
+                    const sLoc = student.origin.toLowerCase().trim();
+
+                    // PROXIMITY MAP (Extensible)
+                    const NEARBY = {
+                        'montpellier': ['sète', 'sete', 'lattes', 'pérols', 'mauguio'],
+                        'sète': ['montpellier', 'frontignan'],
+                        'sete': ['montpellier', 'frontignan'],
+                        'paris': ['versailles', 'boulogne', 'saint-denis'],
+                        'lyon': ['villeurbanne', 'bron']
+                    };
+
+                    if (sLoc.includes(mLoc) || mLoc.includes(sLoc)) {
+                        score += 30; // EXACT MATCH (High Value)
+                        reasons.push(`Perfect Location Match: ${mentor.housing.location}`);
+                    } else {
+                        // Check Proximity
+                        const nearbyCities = NEARBY[mLoc] || [];
+                        if (nearbyCities.some(city => sLoc.includes(city))) {
+                            score += 15; // PROXIMITY MATCH
+                            reasons.push(`Nearby Location Match: ${student.origin} is close to ${mentor.housing.location}`);
+                        }
+                    }
+                }
+
+                // 3. Language Matching (Simple check)
+                if (student.languages && mentor.bio) {
+                    // Very basic NLP: Check if student's language appears in mentor's bio
+                    const langs = student.languages.split(',').map(l => l.trim().toLowerCase());
+                    const bio = mentor.bio.toLowerCase();
+                    if (langs.some(l => bio.includes(l))) {
+                        score += 10;
+                        reasons.push("Language compatibility detected");
+                    }
+                }
+
+                return {
+                    score: Math.min(score, 100), // Cap at 100
+                    reasons
+                };
+            };
+
+            // Fetch & Match Requests
+            useEffect(() => {
+                if (!window.db) return;
+
+                const unsubscribe = window.db.collection('mentorship_requests')
+                    .orderBy('createdAt', 'desc')
+                    .onSnapshot(snapshot => {
+                        const requests = snapshot.docs.map(doc => {
+                            const data = doc.data();
+                            // Run AI Match
+                            const analysis = calculateMatchScore(data, profile);
+
+                            return {
+                                id: doc.id,
+                                ...data,
+                                name: data.studentName || 'Unknown Student',
+                                matchScore: analysis.score,
+                                matchReasons: analysis.reasons
+                            };
+                        });
+
+                        // Sort by Match Score (Highest First)
+                        setMentees(requests.sort((a, b) => b.matchScore - a.matchScore));
+                    });
+                return () => unsubscribe();
+            }, [profile]); // Re-run when profile loads
+
+            // Fetch My Agreements
+            useEffect(() => {
+                if (!window.db || !user) return;
+
+                const unsubscribe = window.db.collection('mentorship_requests').where('mentorId', '==', user.uid)
+                    .onSnapshot(snapshot => {
+                        const ags = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setAgreements(ags);
+                    });
+                return () => unsubscribe();
+            }, [user]);
+
+            // Handle Save Profile
+            const handleSaveProfile = async (e) => {
+                e.preventDefault();
+                try {
+                    await window.db.collection('users').doc(user.uid).set({
+                        name: formData.name,
+                        housing: { location: formData.location },
+                        bio: formData.bio,
+                        mentorship: { capacity: formData.capacity, isMentor: true },
+                        interests: formData.interests.split(',').map(s => s.trim()).filter(Boolean)
+                    }, { merge: true });
+                    alert("Mentor Profile Saved Successfully!");
+                } catch (err) {
+                    console.error("Error saving profile:", err);
+                    alert("Failed to save profile.");
+                }
+            };
+
+            const initiateContract = (mentee) => {
+                setSelectedMentee(mentee);
+                setShowContractModal(true);
+            };
+
+            const handleSignAndSend = async () => {
+                try {
+                    // 1. CAPACTIY CHECK
+                    const currentActive = agreements.filter(a => a.status.includes('Signed') || a.status.includes('Active')).length;
+                    const maxCapacity = profile?.mentorship?.capacity || 3;
+
+                    if (currentActive >= maxCapacity) {
+                        alert(`Capacity Limit Reached! You can only mentor ${maxCapacity} students at a time.`);
+                        return;
+                    }
+
+                    // 2. AVAILABILITY CHECK
+                    if (selectedMentee.status !== 'Requested') {
+                        alert("This student already has a pending offer or active mentor.");
+                        return;
+                    }
+
+                    // Update the EXISTING request instead of creating a new one
+                    await window.db.collection('mentorship_requests').doc(selectedMentee.id).update({
+                        mentorId: user.uid, // REAL ID
+                        mentorName: profile?.name || 'Alora Mentor',
+                        // STAMP PROFILE DATA FOR STUDENT TO REVIEW
+                        mentorBio: profile?.bio || 'Experienced local mentor.',
+                        mentorLocation: profile?.housing?.location || 'France',
+                        mentorInterests: profile?.interests || [],
+                        status: 'Signed by Mentor',
+                        signedAt: new Date().toISOString()
+                    });
+                    alert(`Contract sent to ${selectedMentee.name} for signature!`);
+                    setShowContractModal(false);
+                    setActiveTab('agreements');
+                } catch (e) {
+                    console.error("Error creating agreement", e);
+                    alert("Failed to send contract.");
+                }
+            };
+
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    {/* Header */}
+                    <header className="mb-8 flex justify-between items-end">
+                        <div>
+                            <h1 className="text-3xl font-bold text-navy-primary mb-2">Integration & Mentorship</h1>
+                            <p className="text-gray-600">Connect with international students and help them settle in France.</p>
+                        </div>
+                        <div className="bg-white px-4 py-2 rounded shadow-sm border border-gray-200">
+                            <span className="text-xs font-bold text-gray-400 uppercase block">Your Profile Status</span>
+                            <span className="text-green-600 font-bold flex items-center gap-1"><Icon name="checkCircle" size={16} /> Verified Mentor</span>
+                        </div>
+                    </header>
+
+                    {/* Tabs */}
+                    <div className="flex gap-6 border-b border-gray-300 mb-8">
+                        <button
+                            onClick={() => setActiveTab('matches')}
+                            className={`pb-4 px-2 font-bold text-sm uppercase transition ${activeTab === 'matches' ? 'text-navy-primary border-b-4 border-navy-primary' : 'text-gray-400 hover:text-navy-primary'}`}
+                        >
+                            Smart Matches
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('agreements')}
+                            className={`pb-4 px-2 font-bold text-sm uppercase transition ${activeTab === 'agreements' ? 'text-navy-primary border-b-4 border-navy-primary' : 'text-gray-400 hover:text-navy-primary'}`}
+                        >
+                            My Agreements
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('profile')}
+                            className={`pb-4 px-2 font-bold text-sm uppercase transition ${activeTab === 'profile' ? 'text-navy-primary border-b-4 border-navy-primary' : 'text-gray-400 hover:text-navy-primary'}`}
+                        >
+                            My Profile
+                        </button>
+                    </div>
+
+                    {/* CONTENT Area */}
+                    <div className="min-h-[400px]">
+
+                        {/* PROFILE TAB */}
+                        {activeTab === 'profile' && (
+                            <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+                                <h3 className="font-bold text-xl text-navy-primary mb-6">Mentor Profile Settings</h3>
+                                <form onSubmit={handleSaveProfile} className="space-y-6">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Full Name</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-navy-primary outline-none"
+                                            value={formData.name}
+                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-1">Location (City)</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-navy-primary outline-none"
+                                                value={formData.location}
+                                                onChange={e => setFormData({ ...formData, location: e.target.value })}
+                                                placeholder="e.g. Paris"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-1">Student Capacity</label>
+                                            <input
+                                                type="number"
+                                                className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-navy-primary outline-none"
+                                                value={formData.capacity}
+                                                onChange={e => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+                                                min="1" max="5"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Bio / About You</label>
+                                        <textarea
+                                            className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-navy-primary outline-none h-32"
+                                            value={formData.bio}
+                                            onChange={e => setFormData({ ...formData, bio: e.target.value })}
+                                            placeholder="Tell students about yourself and why you want to mentor..."
+                                        ></textarea>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Interests/Hobbies (Comma separated)</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-navy-primary outline-none"
+                                            value={formData.interests}
+                                            onChange={e => setFormData({ ...formData, interests: e.target.value })}
+                                            placeholder="Travel, Cooking, Literature, Cinema..."
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">These tags help match you with students.</p>
+                                    </div>
+                                    <div className="pt-4 flex justify-end">
+                                        <button type="submit" className="bg-navy-primary text-white font-bold py-3 px-8 rounded hover:bg-navy-dark transition shadow">
+                                            Save Profile
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+
+                        {/* MATCHES SECTION */}
+                        {activeTab === 'matches' && (
+                            <div className="animate-fade-in grid md:grid-cols-3 gap-6">
+                                {mentees.map(mentee => (
+                                    <div key={mentee.id} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-xl transition group">
+                                        <div className="h-20 bg-gradient-to-r from-blue-600 to-navy-primary relative">
+                                            <div className="absolute top-4 right-4 text-right">
+                                                <div className="bg-white/90 backdrop-blur px-2 py-1 rounded text-navy-primary text-xs font-bold shadow-sm">
+                                                    {mentee.matchScore}% Match
+                                                </div>
+                                                {mentee.matchReasons && mentee.matchReasons.length > 0 && (
+                                                    <div className="text-[10px] text-white font-bold mt-1 bg-black/30 px-2 py-0.5 rounded backdrop-blur">
+                                                        {mentee.matchReasons[0]}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="px-6 pb-6 relative">
+                                            <div className="w-16 h-16 -mt-8 bg-white p-1 rounded-full mb-3">
+                                                <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-xl">
+                                                    {mentee.name.charAt(0)}
+                                                </div>
+                                            </div>
+
+                                            <h3 className="font-bold text-lg text-gray-900">{mentee.name}</h3>
+                                            <p className="text-sm text-gray-500 mb-2">{mentee.origin} • {mentee.program}</p>
+
+                                            {/* ENRICHED DETAILS */}
+                                            <p className="text-xs text-gray-600 mb-3 italic line-clamp-2">"{mentee.bio || 'No bio provided.'}"</p>
+
+                                            <div className="flex flex-wrap gap-2 mb-6">
+                                                {(mentee.interests || ['General Integration']).slice(0, 3).map((tag, i) => (
+                                                    <span key={i} className="text-[10px] uppercase font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded">{tag}</span>
+                                                ))}
+                                            </div>
+
+                                            {(!mentee.status || mentee.status === 'Requested') ? (
+                                                <button
+                                                    onClick={() => initiateContract(mentee)}
+                                                    className="w-full py-2 bg-navy-primary text-white font-bold rounded-lg text-sm hover:bg-navy-dark transition flex items-center justify-center gap-2"
+                                                >
+                                                    Start Mentorship <Icon name="arrowRight" size={16} />
+                                                </button>
+                                            ) : (
+                                                <div className="w-full py-2 bg-green-100 text-green-700 font-bold rounded-lg text-sm flex items-center justify-center gap-2 border border-green-200">
+                                                    <Icon name="check" size={16} /> {mentee.status}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* AGREEMENTS SECTION */}
+                        {activeTab === 'agreements' && (
+                            <div className="animate-fade-in space-y-4">
+                                {agreements.length === 0 ? (
+                                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                                            <Icon name="fileText" size={32} />
+                                        </div>
+                                        <h3 className="font-bold text-gray-900 mb-2">No Active Agreements</h3>
+                                        <p className="text-gray-500 max-w-md mx-auto mb-6">Once you match with a student and sign the digital mentorship contract, it will appear here for your reference.</p>
+                                        <button onClick={() => setActiveTab('matches')} className="text-peach-accent font-bold text-sm hover:underline">Find a Mentee</button>
+                                    </div>
+                                ) : (
+                                    agreements.map(ag => (
+                                        <div key={ag.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center">
+                                            <div>
+                                                <h3 className="font-bold text-navy-primary text-lg">{ag.studentName}</h3>
+                                                <p className="text-xs text-gray-500">Sent on: {new Date(ag.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${ag.status === 'Pending Signature' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                                                    {ag.status}
+                                                </span>
+                                                <button className="text-gray-400 hover:text-navy-primary"><Icon name="moreVertical" /></button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+
+                    </div>
+
+                    {/* CONTRACT MODAL */}
+                    {showContractModal && selectedMentee && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in p-4">
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden">
+                                <div className="bg-navy-primary text-white p-6 flex justify-between items-center">
+                                    <h3 className="font-bold text-lg flex items-center gap-2"><Icon name="penTool" /> Mentorship Contract</h3>
+                                    <button onClick={() => setShowContractModal(false)} className="text-white/70 hover:text-white"><Icon name="x" /></button>
+                                </div>
+                                <div className="p-6 max-h-[60vh] overflow-y-auto bg-gray-50">
+                                    <div className="bg-white p-8 shadow-sm border border-gray-200 mb-6">
+                                        <h2 className="text-center font-bold text-xl text-navy-primary mb-6 uppercase tracking-widest border-b pb-4">Mentorship Agreement</h2>
+
+                                        <div className="space-y-6 text-sm text-gray-700">
+                                            <p><strong>Parties:</strong></p>
+                                            <ul className="list-disc pl-5">
+                                                <li><strong>Mentor:</strong> [Current User]</li>
+                                                <li><strong>Mentee:</strong> {selectedMentee.name}</li>
+                                            </ul>
+
+                                            <p><strong>Commitment:</strong></p>
+                                            <p>The Mentor agrees to provide guidance, cultural insight, and support to help the Mentee integrate into life in France. This includes at least one meeting per month.</p>
+
+                                            <p><strong>Duration:</strong></p>
+                                            <p>This agreement is valid for one academic semester, renewable upon mutual agreement.</p>
+                                        </div>
+
+                                        <div className="mt-8 pt-8 border-t border-gray-100 flex justify-between items-end">
+                                            <div className="w-1/2 pr-4">
+                                                <div className="h-12 border-b-2 border-dashed border-gray-300 mb-2"></div>
+                                                <p className="text-xs uppercase font-bold text-gray-400">Signature of Mentor</p>
+                                            </div>
+                                            <div className="w-1/2 pl-4">
+                                                <div className="h-12 border-b-2 border-dashed border-gray-300 mb-2 bg-gray-50 flex items-center px-2 text-xs italic text-gray-400">
+                                                    Waiting for {selectedMentee.name}...
+                                                </div>
+                                                <p className="text-xs uppercase font-bold text-gray-400">Signature of Mentee</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-6 border-t border-gray-100 bg-white flex justify-end gap-3">
+                                    <button onClick={() => setShowContractModal(false)} className="px-4 py-2 border border-gray-300 text-gray-600 font-bold rounded text-sm hover:bg-gray-50">Cancel</button>
+                                    <button
+                                        onClick={handleSignAndSend}
+                                        className="px-6 py-2 bg-green-600 text-white font-bold rounded text-sm hover:bg-green-700 shadow flex items-center gap-2"
+                                    >
+                                        <Icon name="send" size={16} /> Sign & Send
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [profile, setProfile] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const unsubscribe = window.auth.onAuthStateChanged(async (u) => {
+                    if (u) {
+                        setUser(u);
+                        // Fetch Profile
+                        if (window.db) {
+                            try {
+                                const doc = await window.db.collection('users').doc(u.uid).get();
+                                if (doc.exists) setProfile(doc.data());
+                            } catch (e) {
+                                console.error("Error fetching profile", e);
+                            }
+                        }
+                        setLoading(false); // ALWAYS CLEAR LOADING
+                    } else {
+                        window.location.href = 'login.html?role=family';
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
+
+            if (loading) return <div className="h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-navy-primary"></div></div>;
+
+            return (
+                <div>
+                    <NavBar user={user} />
+                    <Dashboard user={user} profile={profile} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);

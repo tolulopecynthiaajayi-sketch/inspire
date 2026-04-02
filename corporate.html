@@ -89,7 +89,7 @@
             );
         };
 
-        const NavBar = () => (
+        const NavBar = ({ user }) => (
             <nav className="bg-navy-primary shadow-lg border-b border-white/10 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex justify-between h-20 items-center">
@@ -100,17 +100,17 @@
                             <span className="font-bold text-white text-lg tracking-widest uppercase">Alora Talent</span>
                         </div>
                         <div className="flex items-center gap-6">
-                            <a href="#" className="text-sm font-semibold text-gray-300 hover:text-white transition">Dashboard</a>
-                            <a href="#" className="text-sm font-semibold text-gray-300 hover:text-white transition">Post a Job</a>
-                            <a href="#" className="text-sm font-semibold text-gray-300 hover:text-white transition">Candidates</a>
-                            <div className="w-8 h-8 rounded-full bg-peach-accent flex items-center justify-center text-white font-bold text-xs">TC</div>
+                            <button onClick={() => window.dispatchEvent(new Event('switchTabDashboard'))} className="text-sm font-semibold text-gray-300 hover:text-white transition">Dashboard</button>
+                            <button onClick={() => window.dispatchEvent(new Event('switchTabPost'))} className="text-sm font-semibold text-gray-300 hover:text-white transition">Post a Job</button>
+                            <button onClick={() => window.dispatchEvent(new Event('switchTabDashboard'))} className="text-sm font-semibold text-gray-300 hover:text-white transition">Candidates</button>
+                            <div className="w-8 h-8 rounded-full bg-peach-accent flex items-center justify-center text-white font-bold text-xs uppercase">{user?.displayName ? user.displayName.slice(0, 2) : 'TC'}</div>
                         </div>
                     </div>
                 </div>
             </nav>
         );
 
-        const Dashboard = () => {
+        const Dashboard = ({ user }) => {
             const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, post-job
             // Real-time Jobs State
             const [jobs, setJobs] = useState([]);
@@ -132,13 +132,22 @@
 
             // Listen for Applications
             React.useEffect(() => {
+                const navPost = () => setActiveTab('post-job');
+                const navDash = () => setActiveTab('dashboard');
+                window.addEventListener('switchTabPost', navPost);
+                window.addEventListener('switchTabDashboard', navDash);
+                
                 if (!window.db) return;
                 const unsubscribe = window.db.collection('job_applications')
                     .onSnapshot(snapshot => {
                         const apps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setApplications(apps);
                     });
-                return () => unsubscribe();
+                return () => {
+                    unsubscribe();
+                    window.removeEventListener('switchTabPost', navPost);
+                    window.removeEventListener('switchTabDashboard', navDash);
+                };
             }, []);
 
             const handlePostJob = async (e) => {
@@ -149,7 +158,8 @@
                     ...newJob,
                     applicants: 0,
                     status: 'Active',
-                    company: 'TechCorp', // Hardcoded for this demo user
+                    company: user?.displayName || 'TechCorp',
+
                     postedAt: new Date().toISOString()
                 };
 
@@ -168,7 +178,7 @@
                 <div className="max-w-7xl mx-auto px-4 py-12">
                     <div className="flex justify-between items-end mb-12">
                         <div>
-                            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back, TechCorp</h1>
+                            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back, {user?.displayName || 'Recruiter'}</h1>
                             <p className="text-slate-400">Manage your recruitment pipeline and discover new talent.</p>
                         </div>
                         <button
@@ -188,7 +198,7 @@
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
                                             <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Jobs</p>
-                                            <h3 className="text-4xl font-bold text-white mt-2">4</h3>
+                                            <h3 className="text-4xl font-bold text-white mt-2">{jobs.length}</h3>
                                         </div>
                                         <div className="p-2 bg-slate-700 rounded text-peach-accent"><Icon name="briefcase" /></div>
                                     </div>
@@ -345,8 +355,8 @@
 
             return (
                 <div>
-                    <NavBar />
-                    <Dashboard />
+                    <NavBar user={user} />
+                    <Dashboard user={user} />
                 </div>
             );
         };
