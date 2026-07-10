@@ -356,13 +356,6 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            // Admin Security Check
-            const validPassword = localStorage.getItem('adminPassword') || 'admin123';
-            if (currentRole === 'admin' && password !== validPassword) {
-                alert(`ACCESS DENIED: Restricted to Administrators only.\nHint: Try "${validPassword}"`);
-                return;
-            }
-
             setLoading(true);
 
             try {
@@ -435,7 +428,6 @@
 
                 // Redirect Logic
                 if (currentRole === 'admin') {
-                    sessionStorage.setItem('isAdmin', 'true');
                     window.location.href = 'admin.html';
                 } else {
                     redirectToDashboard(currentRole);

@@ -175,17 +175,39 @@
 
             // AUTH CHECK
             useEffect(() => {
-                const isAdmin = sessionStorage.getItem('isAdmin');
-                if (!isAdmin) {
-                    window.location.href = 'admin-login.html';
-                } else {
-                    setIsAuthenticated(true);
-                }
+                if (!window.auth || !window.db) return;
+
+                const unsubscribe = window.auth.onAuthStateChanged(async (user) => {
+                    if (!user) {
+                        sessionStorage.removeItem('isAdmin');
+                        window.location.href = 'admin-login.html';
+                        return;
+                    }
+
+                    try {
+                        const profile = await window.db.collection('users').doc(user.uid).get();
+                        if (!profile.exists || profile.data().role !== 'admin') {
+                            sessionStorage.removeItem('isAdmin');
+                            await window.auth.signOut();
+                            window.location.href = 'admin-login.html';
+                            return;
+                        }
+
+                        sessionStorage.setItem('isAdmin', 'true');
+                        setIsAuthenticated(true);
+                    } catch (error) {
+                        console.error("Admin verification failed:", error);
+                        sessionStorage.removeItem('isAdmin');
+                        window.location.href = 'admin-login.html';
+                    }
+                });
+
+                return () => unsubscribe();
             }, []);
 
             // DATA FETCHING HOOKS
             useEffect(() => {
-                if (!window.db) return;
+                if (!isAuthenticated || !window.db) return;
                 const unsubscribe = window.db.collection('users')
                     .where('role', '==', 'student')
                     .onSnapshot(snapshot => {
@@ -211,11 +233,11 @@
                         setIntakes(loadedStudents);
                     }, error => console.error("Error fetching intakes:", error));
                 return () => unsubscribe();
-            }, []);
+            }, [isAuthenticated]);
 
             // AUTO-FETCH MATCHES
             useEffect(() => {
-                if (!selectedStudent || !window.db) return;
+                if (!isAuthenticated || !selectedStudent || !window.db) return;
                 // Reset state
                 setSearchResults(null);
                 setAutoMatchData(null);
@@ -233,18 +255,18 @@
                         }
                     });
                 return () => unsubscribe();
-            }, [selectedStudent]);
+            }, [isAuthenticated, selectedStudent]);
 
             // Active Applications Listener
             useEffect(() => {
-                if (!selectedStudent || !window.db) return;
+                if (!isAuthenticated || !selectedStudent || !window.db) return;
                 const unsubscribe = window.db.collection('users').doc(selectedStudent.id).collection('applications')
                     .orderBy('createdAt', 'desc')
                     .onSnapshot(snapshot => {
                         setActiveApps(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
                     }, err => console.log("No apps found or error", err));
                 return () => unsubscribe();
-            }, [selectedStudent]);
+            }, [isAuthenticated, selectedStudent]);
 
             // CONDITIONAL RENDER MUST BE AFTER HOOKS
             if (!isAuthenticated) return null; // Or a loading spinner
@@ -637,39 +659,15 @@
                         </div>
                     )}
 
-                    {/* SETTINGS - CHANGE PASSWORD */}
+                    {/* SETTINGS */}
                     {activeTab === 'settings' && (
                         <div className="animate-fade-in max-w-xl">
                             <h2 className="font-bold text-xl text-navy-primary mb-6 flex items-center gap-2"><Icon name="lock" /> Admin Security Settings</h2>
                             <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
-                                <h3 className="font-bold text-lg mb-4 text-gray-800">Change Admin Password</h3>
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const newPass = e.target.newPassword.value;
-                                    const confirmPass = e.target.confirmPassword.value;
-                                    if (newPass === confirmPass && newPass.length > 0) {
-                                        localStorage.setItem('adminPassword', newPass);
-                                        alert('Password updated successfully! Please log in with your new password.');
-                                        sessionStorage.removeItem('isAdmin'); // Force re-login
-                                        window.location.href = 'login.html';
-                                    } else {
-                                        alert('Passwords do not match or are empty.');
-                                    }
-                                }}>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">New Password</label>
-                                            <input name="newPassword" type="password" className="w-full p-3 border rounded border-gray-200 outline-none focus:border-navy-primary" placeholder="Enter new password" required />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Confirm Password</label>
-                                            <input name="confirmPassword" type="password" className="w-full p-3 border rounded border-gray-200 outline-none focus:border-navy-primary" placeholder="Confirm new password" required />
-                                        </div>
-                                        <div className="pt-4">
-                                            <button type="submit" className="bg-peach-accent text-white font-bold py-3 px-6 rounded hover:bg-orange-700 transition w-full uppercase tracking-wide">Update Password</button>
-                                        </div>
-                                    </div>
-                                </form>
+                                <h3 className="font-bold text-lg mb-4 text-gray-800">Account Security</h3>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    Admin access is now verified against the signed-in Firebase user profile. Password changes should be handled through Firebase Authentication, not browser storage.
+                                </p>
                             </div>
                         </div>
                     )}

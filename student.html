@@ -964,7 +964,7 @@
                                         {docs.some(d => d.type === 'cv') ? (
                                             <div className="flex items-center gap-3">
                                                 <span className="text-green-600 text-sm font-bold flex items-center gap-1"><Icon name="checkCircle" size={16} /> CV Uploaded</span>
-                                                <a href={docs.find(d => d.type === 'cv').url} target="_blank" className="text-blue-600 text-xs hover:underline">View</a>
+                                                <a href={docs.find(d => d.type === 'cv').url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs hover:underline">View</a>
                                                 <button onClick={() => handleDelete(docs.find(d => d.type === 'cv').id)} className="text-red-400 hover:text-red-600"><Icon name="trash2" size={16} /></button>
                                             </div>
                                         ) : (
@@ -1348,7 +1348,7 @@
 
                                                         {existingDoc ? (
                                                             <div className="flex gap-2">
-                                                                <a href={existingDoc.url} target="_blank" className="text-blue-600 hover:text-blue-800"><Icon name="eye" size={16} /></a>
+                                                                <a href={existingDoc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800"><Icon name="eye" size={16} /></a>
                                                                 <button onClick={() => handleDelete(existingDoc.id)} className="text-red-400 hover:text-red-600"><Icon name="trash2" size={16} /></button>
                                                             </div>
                                                         ) : (
@@ -1395,7 +1395,7 @@
                                                                 <Icon name="check" size={14} className="text-green-600" />
                                                             </span>
                                                             <div className="flex gap-2">
-                                                                <a href={doc.url} target="_blank" className="text-blue-600 hover:text-blue-800"><Icon name="eye" size={16} /></a>
+                                                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800"><Icon name="eye" size={16} /></a>
                                                                 <button onClick={() => handleDelete(doc.id)} className="text-red-400 hover:text-red-600"><Icon name="trash2" size={16} /></button>
                                                             </div>
                                                         </div>

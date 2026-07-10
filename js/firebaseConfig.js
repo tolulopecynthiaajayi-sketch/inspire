@@ -1,16 +1,15 @@
 // Firebase Compat SDK Configuration
-console.log("DEBUG: firebaseConfig.js is executing..."); // CONFIRM LOAD
-// This version uses the global 'firebase' namespace so it works directly on the file:// protocol
-// without needing a local server.
+// This version uses the global 'firebase' namespace so it works directly on the file://
+// protocol without needing a local server. Loaded via CDN <script> tags in each HTML page.
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDJdrBgSlxb-DnsnAzI62n2xWVexjSAWNI",
-    authDomain: "alora-web-be4e4.firebaseapp.com",
-    projectId: "alora-web-be4e4",
-    storageBucket: "alora-web-be4e4.firebasestorage.app",
-    messagingSenderId: "367051813766",
-    appId: "1:367051813766:web:12c289881b74d074b73207",
-    measurementId: "G-G662KWR4CN"
+    apiKey: "AIzaSyBkO0QDhFrETbalbLDzVEvfb_XLBqFnuQ8",
+    authDomain: "alora-20915.firebaseapp.com",
+    projectId: "alora-20915",
+    storageBucket: "alora-20915.firebasestorage.app",
+    messagingSenderId: "559321839947",
+    appId: "1:559321839947:web:6039702a5964e3b01090ce",
+    measurementId: "G-7GCS4MXSM4"
 };
 
 // Initialize Firebase (Global Namespace)
@@ -26,12 +25,11 @@ if (typeof firebase !== 'undefined') {
     if (firebase.storage) window.storage = firebase.storage();
     if (firebase.analytics) window.analytics = firebase.analytics();
 
-    console.log("Firebase Initialized (Compat Mode) - Project: alora-web-be4e4");
+    console.log("Firebase Initialized (Compat Mode) - Project:", firebaseConfig.projectId);
 
     // Notify app that we are ready
     window.isFirebaseReady = true;
     window.dispatchEvent(new Event('firebase-ready'));
 } else {
-    console.error("Firebase SDK not loaded. Make sure generic script tags are in the HTML.");
-    alert("CRITICAL ERROR: Firebase SDK not loaded. Please check your internet connection.");
+    console.error("Firebase SDK not loaded. Make sure Firebase <script> tags are included in the HTML before this file.");
 }

@@ -112,6 +112,9 @@
 
         const Dashboard = () => {
             const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, post-job
+            const [user, setUser] = useState(null);
+            const [profile, setProfile] = useState(null);
+            const [isAuthorized, setIsAuthorized] = useState(false);
             // Real-time Jobs State
             const [jobs, setJobs] = useState([]);
             const [newJob, setNewJob] = useState({ title: '', location: '', type: 'Internship', description: '' });
@@ -119,27 +122,57 @@
             // Real-time Applications State
             const [applications, setApplications] = useState([]);
 
+            React.useEffect(() => {
+                if (!window.auth || !window.db) return;
+
+                const unsubscribe = window.auth.onAuthStateChanged(async (currentUser) => {
+                    if (!currentUser) {
+                        window.location.href = 'login.html?role=corporate';
+                        return;
+                    }
+
+                    try {
+                        const profileDoc = await window.db.collection('users').doc(currentUser.uid).get();
+                        const profileData = profileDoc.exists ? profileDoc.data() : null;
+                        if (!profileData || profileData.role !== 'corporate') {
+                            await window.auth.signOut();
+                            window.location.href = 'login.html?role=corporate';
+                            return;
+                        }
+
+                        setUser(currentUser);
+                        setProfile(profileData);
+                        setIsAuthorized(true);
+                    } catch (error) {
+                        console.error("Corporate authorization failed:", error);
+                        window.location.href = 'login.html?role=corporate';
+                    }
+                });
+
+                return () => unsubscribe();
+            }, []);
+
             // Listen for Jobs
             React.useEffect(() => {
-                if (!window.db) return;
+                if (!isAuthorized || !window.db) return;
                 const unsubscribe = window.db.collection('jobs')
                     .onSnapshot(snapshot => {
                         const loadedJobs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setJobs(loadedJobs);
                     });
                 return () => unsubscribe();
-            }, []);
+            }, [isAuthorized]);
 
             // Listen for Applications
             React.useEffect(() => {
-                if (!window.db) return;
+                if (!isAuthorized || !window.db) return;
                 const unsubscribe = window.db.collection('job_applications')
                     .onSnapshot(snapshot => {
                         const apps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setApplications(apps);
                     });
                 return () => unsubscribe();
-            }, []);
+            }, [isAuthorized]);
 
             const handlePostJob = async (e) => {
                 e.preventDefault();
@@ -149,7 +182,8 @@
                     ...newJob,
                     applicants: 0,
                     status: 'Active',
-                    company: 'TechCorp', // Hardcoded for this demo user
+                    company: profile?.companyName || profile?.name || user?.displayName || 'Company',
+                    companyId: user.uid,
                     postedAt: new Date().toISOString()
                 };
 
@@ -163,6 +197,14 @@
                     alert("Failed to post job.");
                 }
             };
+
+            if (!isAuthorized) {
+                return (
+                    <div className="min-h-[60vh] flex items-center justify-center text-slate-400">
+                        Verifying access...
+                    </div>
+                );
+            }
 
             return (
                 <div className="max-w-7xl mx-auto px-4 py-12">
@@ -247,7 +289,7 @@
                                                     <p className="text-xs text-slate-400">{app.title} • {app.statusLabel}</p>
                                                 </div>
                                                 <div className="ml-auto flex gap-2">
-                                                    {app.cvUrl && <a href={app.cvUrl} target="_blank" className="text-slate-400 hover:text-white"><Icon name="fileText" size={16} /></a>}
+                                                    {app.cvUrl && <a href={app.cvUrl} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white"><Icon name="fileText" size={16} /></a>}
                                                     <button className="text-peach-accent text-sm font-bold hover:text-white">View</button>
                                                 </div>
                                             </div>

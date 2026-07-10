@@ -1,6 +1,13 @@
 node_modules/
+dist/
+tsconfig.tsbuildinfo
+.env.local
+.env.*.local
 .firebase/
 .DS_Store
 *.log
 firebase-debug.log*
 .firebaserc
+.idea
+.agents
+.env
